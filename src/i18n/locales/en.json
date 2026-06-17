@@ -1,0 +1,149 @@
+{
+  "common": {
+    "error": "Error",
+    "ok": "OK",
+    "active": "active"
+  },
+
+  "auth": {
+    "login": {
+      "subtitle": "Earn your screen time",
+      "emailPlaceholder": "Email",
+      "passwordPlaceholder": "Password",
+      "signIn": "Sign In",
+      "noAccount": "Don't have an account? ",
+      "register": "Register",
+      "errorTitle": "Login Error",
+      "emptyFields": "Please fill in all fields"
+    },
+    "register": {
+      "title": "Create Account",
+      "subtitle": "Start earning screen time",
+      "namePlaceholder": "Name",
+      "emailPlaceholder": "Email",
+      "passwordPlaceholder": "Password (min. 6 characters)",
+      "createAccount": "Create Account",
+      "hasAccount": "Already have an account? ",
+      "signIn": "Sign In",
+      "errorTitle": "Registration Error",
+      "emptyFields": "Please fill in all fields",
+      "passwordTooShort": "Password must be at least 6 characters",
+      "successTitle": "Success",
+      "successMessage": "Account created! Check your email for confirmation."
+    }
+  },
+
+  "tabs": {
+    "today": "Today",
+    "habits": "Habits",
+    "tasks": "Tasks",
+    "profile": "Profile"
+  },
+
+  "today": {
+    "greeting": "Hello, {{name}} 👋",
+    "habitsSection": "🔥 Habits for Today",
+    "tasksSection": "✅ Tasks for Today",
+    "noHabitsTitle": "No habits",
+    "noHabitsSubtitle": "Create your first habit in the Habits tab",
+    "noTasksTitle": "No tasks for today",
+    "noTasksSubtitle": "Create a task in the Tasks tab",
+    "defaultUser": "User",
+    "errorLogHabit": "Could not log habit",
+    "errorCancelHabitLog": "Could not cancel log",
+    "errorLogTask": "Could not complete task",
+    "errorCancelTaskLog": "Could not cancel completion"
+  },
+
+  "habits": {
+    "title": "Habits",
+    "activeCount": "{{count}} active",
+    "noHabitsTitle": "No habits",
+    "noHabitsSubtitle": "Tap «+» to create your first habit and start earning time",
+    "errorLog": "Could not log",
+    "errorCancelLog": "Could not cancel"
+  },
+
+  "tasks": {
+    "title": "Tasks",
+    "activeCount": "{{count}} active",
+    "filterAll": "All",
+    "filterToday": "Today",
+    "filterUpcoming": "Upcoming",
+    "noTasksTitle": "No tasks",
+    "noTasksSubtitle": "Tap «+» to create your first task",
+    "errorLog": "Could not complete task",
+    "errorCancelLog": "Could not cancel"
+  },
+
+  "profile": {
+    "title": "Profile",
+    "balanceLabel": "Time Balance",
+    "settingsSection": "Settings",
+    "darkTheme": "Dark Mode",
+    "lightTheme": "Light Mode",
+    "signOut": "Sign Out",
+    "version": "DopaRatio v1.0.0",
+    "defaultUser": "User"
+  },
+
+  "balance": {
+    "earnedTime": "Earned Time",
+    "minutesAvailable": "{{count}} min available",
+    "hours": "{{h}}h ",
+    "minutes": "{{m}}m"
+  },
+
+  "habitCard": {
+    "completed": "✓ Completed"
+  },
+
+  "taskCard": {
+    "recurring": "Repeat."
+  },
+
+  "createHabit": {
+    "title": "New Habit",
+    "labelName": "Name",
+    "labelIcon": "Icon",
+    "labelColor": "Color",
+    "labelLogType": "Tracking Type",
+    "labelTargetValue": "Target Value",
+    "labelScheduleDays": "Days of Week",
+    "namePlaceholder": "e.g. Read 10 pages",
+    "targetValuePlaceholder": "e.g. 10",
+    "typeBinary": "Yes / No",
+    "typeBinaryHint": "One tap",
+    "typeNumeric": "Counter",
+    "typeNumericHint": "Reach goal",
+    "rewardHint": "Base reward: +10 minutes (up to +20 with streak bonus)",
+    "createButton": "Create Habit",
+    "errorTitle": "Error",
+    "emptyName": "Please enter a habit name",
+    "invalidTarget": "Target value must be between 1 and 99",
+    "errorCreate": "Could not create habit",
+    "days": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+  },
+
+  "createTask": {
+    "title": "New Task",
+    "labelName": "Name",
+    "labelDifficulty": "Difficulty",
+    "labelScheduleDays": "Days of Week",
+    "namePlaceholder": "e.g. Gym workout",
+    "recurringLabel": "Recurring",
+    "recurringHint": "Task available every day",
+    "rewardHint": "For completion you'll earn +{{minutes}} minutes of screen time",
+    "createButton": "Create Task",
+    "errorTitle": "Error",
+    "emptyName": "Please enter a task name",
+    "errorCreate": "Could not create task",
+    "days": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+  },
+
+  "difficulty": {
+    "ROUTINE": "Routine",
+    "MEDIUM": "Medium",
+    "HARD": "Hard"
+  }
+}
