@@ -13,6 +13,6 @@ i18n.use(initReactI18next).init({
     escapeValue: false,
   },
   initImmediate: false, // Synchronous init — required for react-native-reanimated compatibility
-});
+} as any);
 
 export default i18n;

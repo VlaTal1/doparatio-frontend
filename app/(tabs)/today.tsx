@@ -7,7 +7,7 @@ import {
   RefreshControl,
   Alert,
 } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
 import { useTranslation } from 'react-i18next';
@@ -24,6 +24,7 @@ import { HabitDTO, TaskDTO } from '../../src/types';
 import { FontSize, FontWeight, Spacing } from '../../src/constants/theme';
 
 export default function TodayScreen() {
+  const router = useRouter();
   const { colors } = useTheme();
   const { user } = useAuth();
   const { t } = useTranslation();
@@ -138,6 +139,7 @@ export default function TodayScreen() {
                   todayDate={today}
                   onLog={handleLogHabit}
                   onCancelLog={handleCancelHabitLog}
+                  onPress={() => router.push(`/habit/${habit.id}`)}
                 />
               ))}
             </View>

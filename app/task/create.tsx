@@ -61,7 +61,11 @@ export default function CreateTaskScreen() {
         recurring,
         scheduleDays: recurring && scheduleDays.length < 7 ? scheduleDays : undefined,
       });
-      router.replace('/(tabs)/tasks');
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace('/(tabs)/tasks');
+      }
     } catch (error: any) {
       Alert.alert(t('createTask.errorTitle'), error.response?.data?.message || t('createTask.errorCreate'));
     } finally {
@@ -79,7 +83,11 @@ export default function CreateTaskScreen() {
         <View style={styles.header}>
           <Pressable
             onPress={() => {
-              router.replace('/(tabs)/tasks');
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace('/(tabs)/tasks');
+              }
             }}
             style={styles.backBtn}
           >

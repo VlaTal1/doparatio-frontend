@@ -10,6 +10,8 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Modal,
+  Dimensions,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,8 +19,13 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../src/contexts/ThemeContext';
 import { habitsApi } from '../../src/api/habits';
-import { LogType } from '../../src/types';
+import { LogType, HabitLogDTO } from '../../src/types';
 import { BorderRadius, FontSize, FontWeight, Spacing } from '../../src/constants/theme';
+import { format } from 'date-fns';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const GAP = 8;
+const CELL_SIZE = Math.floor((SCREEN_WIDTH - Spacing.xl * 2 - (6 * GAP)) / 7);
 
 const EMOJI_OPTIONS = ['📚', '💪', '🧘', '🏃', '💧', '🍎', '✍️', '🎵', '🧹', '💊', '🛌', '📵'];
 const COLOR_OPTIONS = ['E5A93C', '4ADE80', '60A5FA', 'F87171', 'A78BFA', 'FB923C', '34D399', 'F472B6'];
@@ -81,33 +88,7 @@ export default function CreateHabitScreen() {
     );
   };
 
-  const handleDelete = () => {
-    Alert.alert(
-      t('createHabit.deleteConfirmTitle', { defaultValue: 'Delete Habit' }),
-      t('createHabit.deleteConfirmMsg', { defaultValue: 'Are you sure you want to delete this habit?' }),
-      [
-        { text: t('common.cancel', { defaultValue: 'Cancel' }), style: 'cancel' },
-        {
-          text: t('common.delete', { defaultValue: 'Delete' }),
-          style: 'destructive',
-          onPress: async () => {
-            setLoading(true);
-            try {
-              await habitsApi.delete(parseInt(id!, 10));
-              router.replace('/(tabs)/habits');
-            } catch (error: any) {
-              Alert.alert(
-                t('createHabit.errorTitle'),
-                error.response?.data?.message || t('createHabit.errorDelete', { defaultValue: 'Could not delete habit' })
-              );
-            } finally {
-              setLoading(false);
-            }
-          },
-        },
-      ]
-    );
-  };
+
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -145,7 +126,11 @@ export default function CreateHabitScreen() {
           scheduleDays: scheduleVal,
         });
       }
-      router.replace('/(tabs)/habits');
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace('/(tabs)/habits');
+      }
     } catch (error: any) {
       const defaultError = isEdit
         ? t('createHabit.errorUpdate', { defaultValue: 'Could not save habit' })
@@ -166,7 +151,11 @@ export default function CreateHabitScreen() {
         <View style={styles.header}>
           <Pressable
             onPress={() => {
-              router.replace('/(tabs)/habits');
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace('/(tabs)/habits');
+              }
             }}
             style={styles.backBtn}
           >
@@ -175,13 +164,7 @@ export default function CreateHabitScreen() {
           <Text style={[styles.headerTitle, { color: colors.text }]}>
             {isEdit ? t('createHabit.editTitle', { defaultValue: 'Edit Habit' }) : t('createHabit.title')}
           </Text>
-          {isEdit ? (
-            <Pressable onPress={handleDelete} style={styles.backBtn}>
-              <MaterialCommunityIcons name="trash-can-outline" size={24} color={colors.error} />
-            </Pressable>
-          ) : (
-            <View style={{ width: 40 }} />
-          )}
+          <View style={{ width: 40 }} />
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -347,6 +330,7 @@ export default function CreateHabitScreen() {
               {t('createHabit.rewardHint')}
             </Text>
           </View>
+
         </ScrollView>
 
         {/* Save/Create button */}
@@ -366,6 +350,8 @@ export default function CreateHabitScreen() {
           </Pressable>
         </View>
       </KeyboardAvoidingView>
+
+
     </SafeAreaView>
   );
 }
@@ -501,4 +487,132 @@ const styles = StyleSheet.create({
     fontSize: FontSize.lg,
     fontWeight: FontWeight.bold,
   },
+  divider: {
+    height: 1,
+    marginVertical: Spacing.xl,
+  },
+  calendarSection: {
+    marginBottom: Spacing.xxl,
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginVertical: Spacing.sm,
+  },
+  monthNavBtn: {
+    padding: Spacing.sm,
+  },
+  monthLabelText: {
+    fontSize: FontSize.md,
+    fontWeight: FontWeight.semibold,
+    textTransform: 'capitalize',
+  },
+  weekDaysRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    columnGap: GAP,
+    marginBottom: Spacing.sm,
+  },
+  weekDayHeaderCell: {
+    width: CELL_SIZE,
+    textAlign: 'center',
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.semibold,
+  },
+  daysGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    columnGap: GAP,
+    rowGap: Spacing.sm,
+  },
+  dayCell: {
+    width: CELL_SIZE,
+    height: CELL_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: CELL_SIZE / 2,
+    borderWidth: 1,
+  },
+  dayCellPlaceholder: {
+    width: CELL_SIZE,
+    height: CELL_SIZE,
+  },
+  dayCellText: {
+    fontSize: FontSize.sm,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.xl,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 320,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    padding: Spacing.xl,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  modalHeaderTitle: {
+    fontSize: FontSize.lg,
+    fontWeight: FontWeight.bold,
+    marginBottom: Spacing.xs,
+  },
+  modalDateText: {
+    fontSize: FontSize.sm,
+    marginBottom: Spacing.xl,
+  },
+  modalValueContainer: {
+    alignItems: 'center',
+    marginBottom: Spacing.xl,
+  },
+  modalValueLabel: {
+    fontSize: FontSize.xl,
+    fontWeight: FontWeight.bold,
+  },
+  modalTargetLabel: {
+    fontSize: FontSize.xs,
+    marginTop: Spacing.xs,
+  },
+  modalButtonsRow: {
+    flexDirection: 'row',
+    gap: Spacing.lg,
+    marginBottom: Spacing.xl,
+  },
+  modalAdjustBtn: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalDoneBtn: {
+    width: '100%',
+    height: 50,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalDoneBtnText: {
+    color: '#fff',
+    fontSize: FontSize.md,
+    fontWeight: FontWeight.bold,
+  },
 });
+
+function getRgbaColor(hex: string, opacity: number): string {
+  const cleanHex = hex.replace('#', '');
+  const r = parseInt(cleanHex.substring(0, 2), 16);
+  const g = parseInt(cleanHex.substring(2, 4), 16);
+  const b = parseInt(cleanHex.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+}

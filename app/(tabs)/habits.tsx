@@ -141,7 +141,7 @@ export default function HabitsScreen() {
               onLog={handleLog}
               onCancelLog={handleCancelLog}
               showHeatmap={true}
-              onPress={() => router.push(`/habit/create?id=${habit.id}`)}
+              onPress={() => router.push(`/habit/${habit.id}`)}
               onLongPress={() => handleLongPress(habit)}
             />
           ))
