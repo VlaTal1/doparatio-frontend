@@ -4,7 +4,8 @@
     "ok": "OK",
     "active": "active",
     "cancel": "Cancel",
-    "delete": "Delete"
+    "delete": "Delete",
+    "edit": "Edit"
   },
 
   "auth": {
@@ -63,7 +64,8 @@
     "noHabitsTitle": "No habits",
     "noHabitsSubtitle": "Tap «+» to create your first habit and start earning time",
     "errorLog": "Could not log",
-    "errorCancelLog": "Could not cancel"
+    "errorCancelLog": "Could not cancel",
+    "longPressOptionsTitle": "Choose an option"
   },
 
   "tasks": {

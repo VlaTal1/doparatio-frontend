@@ -61,7 +61,7 @@ export default function CreateTaskScreen() {
         recurring,
         scheduleDays: recurring && scheduleDays.length < 7 ? scheduleDays : undefined,
       });
-      router.back();
+      router.replace('/(tabs)/tasks');
     } catch (error: any) {
       Alert.alert(t('createTask.errorTitle'), error.response?.data?.message || t('createTask.errorCreate'));
     } finally {
@@ -77,7 +77,12 @@ export default function CreateTaskScreen() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {/* Header */}
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+          <Pressable
+            onPress={() => {
+              router.replace('/(tabs)/tasks');
+            }}
+            style={styles.backBtn}
+          >
             <MaterialCommunityIcons name="close" size={24} color={colors.text} />
           </Pressable>
           <Text style={[styles.headerTitle, { color: colors.text }]}>{t('createTask.title')}</Text>

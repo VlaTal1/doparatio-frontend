@@ -68,6 +68,53 @@ export default function HabitsScreen() {
     }
   };
 
+  const handleLongPress = (habit: HabitDTO) => {
+    Alert.alert(
+      habit.name,
+      t('habits.longPressOptionsTitle'),
+      [
+        {
+          text: t('common.edit'),
+          onPress: () => router.push(`/habit/create?id=${habit.id}`),
+        },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: () => confirmDelete(habit),
+        },
+        {
+          text: t('common.cancel'),
+          style: 'cancel',
+        },
+      ]
+    );
+  };
+
+  const confirmDelete = (habit: HabitDTO) => {
+    Alert.alert(
+      t('createHabit.deleteConfirmTitle'),
+      t('createHabit.deleteConfirmMsg'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await habitsApi.delete(habit.id!);
+              await loadHabits();
+            } catch (error: any) {
+              Alert.alert(
+                t('common.error'),
+                error.response?.data?.message || t('createHabit.errorDelete')
+              );
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       {/* Header */}
@@ -95,6 +142,7 @@ export default function HabitsScreen() {
               onCancelLog={handleCancelLog}
               showHeatmap={true}
               onPress={() => router.push(`/habit/create?id=${habit.id}`)}
+              onLongPress={() => handleLongPress(habit)}
             />
           ))
         ) : (

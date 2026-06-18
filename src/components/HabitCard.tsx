@@ -14,6 +14,7 @@ interface HabitCardProps {
   onCancelLog: (habitId: number) => void;
   showHeatmap?: boolean;
   onPress?: () => void;
+  onLongPress?: () => void;
 }
 
 export function HabitCard({
@@ -23,6 +24,7 @@ export function HabitCard({
   onCancelLog,
   showHeatmap = false,
   onPress,
+  onLongPress,
 }: HabitCardProps) {
   const { colors } = useTheme();
 
@@ -119,7 +121,8 @@ export function HabitCard({
   return (
     <Pressable
       onPress={onPress}
-      disabled={!onPress}
+      onLongPress={onLongPress}
+      disabled={!onPress && !onLongPress}
       style={({ pressed }) => [
         styles.container,
         {

@@ -94,7 +94,7 @@ export default function CreateHabitScreen() {
             setLoading(true);
             try {
               await habitsApi.delete(parseInt(id!, 10));
-              router.back();
+              router.replace('/(tabs)/habits');
             } catch (error: any) {
               Alert.alert(
                 t('createHabit.errorTitle'),
@@ -145,7 +145,7 @@ export default function CreateHabitScreen() {
           scheduleDays: scheduleVal,
         });
       }
-      router.back();
+      router.replace('/(tabs)/habits');
     } catch (error: any) {
       const defaultError = isEdit
         ? t('createHabit.errorUpdate', { defaultValue: 'Could not save habit' })
@@ -164,7 +164,12 @@ export default function CreateHabitScreen() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {/* Header */}
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+          <Pressable
+            onPress={() => {
+              router.replace('/(tabs)/habits');
+            }}
+            style={styles.backBtn}
+          >
             <MaterialCommunityIcons name="close" size={24} color={colors.text} />
           </Pressable>
           <Text style={[styles.headerTitle, { color: colors.text }]}>
