@@ -2,7 +2,9 @@
   "common": {
     "error": "Error",
     "ok": "OK",
-    "active": "active"
+    "active": "active",
+    "cancel": "Cancel",
+    "delete": "Delete"
   },
 
   "auth": {
@@ -95,7 +97,8 @@
   },
 
   "habitCard": {
-    "completed": "✓ Completed"
+    "completed": "✓ Completed",
+    "activityLast6Months": "Activity (Last 6 Months)"
   },
 
   "taskCard": {
@@ -104,6 +107,7 @@
 
   "createHabit": {
     "title": "New Habit",
+    "editTitle": "Edit Habit",
     "labelName": "Name",
     "labelIcon": "Icon",
     "labelColor": "Color",
@@ -118,10 +122,17 @@
     "typeNumericHint": "Reach goal",
     "rewardHint": "Base reward: +10 minutes (up to +20 with streak bonus)",
     "createButton": "Create Habit",
+    "saveButton": "Save Changes",
+    "deleteConfirmTitle": "Delete Habit",
+    "deleteConfirmMsg": "Are you sure you want to delete this habit?",
+    "cannotChangeTypeHint": "Cannot change type once a habit has logged entries",
     "errorTitle": "Error",
     "emptyName": "Please enter a habit name",
     "invalidTarget": "Target value must be between 1 and 99",
     "errorCreate": "Could not create habit",
+    "errorLoad": "Could not load habit details",
+    "errorDelete": "Could not delete habit",
+    "errorUpdate": "Could not save habit",
     "days": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
   },
 

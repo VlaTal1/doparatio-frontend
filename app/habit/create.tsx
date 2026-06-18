@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -27,6 +27,9 @@ export default function CreateHabitScreen() {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const router = useRouter();
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const isEdit = !!id;
+
   const [name, setName] = useState('');
   const [icon, setIcon] = useState('📚');
   const [color, setColor] = useState('E5A93C');
@@ -34,6 +37,33 @@ export default function CreateHabitScreen() {
   const [targetValue, setTargetValue] = useState('1');
   const [scheduleDays, setScheduleDays] = useState<number[]>([1, 2, 3, 4, 5, 6, 7]);
   const [loading, setLoading] = useState(false);
+  const [hasLogs, setHasLogs] = useState(false);
+
+  useEffect(() => {
+    if (isEdit && id) {
+      const habitId = parseInt(id, 10);
+      if (!isNaN(habitId)) {
+        setLoading(true);
+        habitsApi.getById(habitId)
+          .then((habit) => {
+            setName(habit.name);
+            setIcon(habit.icon);
+            setColor(habit.color);
+            setLogType(habit.logType);
+            setTargetValue(String(habit.targetValue));
+            setScheduleDays(habit.scheduleDays || [1, 2, 3, 4, 5, 6, 7]);
+            setHasLogs(!!habit.logs && habit.logs.length > 0);
+          })
+          .catch((error) => {
+            console.error('Fetch habit error:', error);
+            Alert.alert(t('common.error'), t('createHabit.errorLoad', { defaultValue: 'Could not load habit details' }));
+          })
+          .finally(() => {
+            setLoading(false);
+          });
+      }
+    }
+  }, [id, isEdit]);
 
   const DAY_LABELS = [
     t('createHabit.days.0'),
@@ -51,7 +81,35 @@ export default function CreateHabitScreen() {
     );
   };
 
-  const handleCreate = async () => {
+  const handleDelete = () => {
+    Alert.alert(
+      t('createHabit.deleteConfirmTitle', { defaultValue: 'Delete Habit' }),
+      t('createHabit.deleteConfirmMsg', { defaultValue: 'Are you sure you want to delete this habit?' }),
+      [
+        { text: t('common.cancel', { defaultValue: 'Cancel' }), style: 'cancel' },
+        {
+          text: t('common.delete', { defaultValue: 'Delete' }),
+          style: 'destructive',
+          onPress: async () => {
+            setLoading(true);
+            try {
+              await habitsApi.delete(parseInt(id!, 10));
+              router.back();
+            } catch (error: any) {
+              Alert.alert(
+                t('createHabit.errorTitle'),
+                error.response?.data?.message || t('createHabit.errorDelete', { defaultValue: 'Could not delete habit' })
+              );
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleSave = async () => {
     if (!name.trim()) {
       Alert.alert(t('createHabit.errorTitle'), t('createHabit.emptyName'));
       return;
@@ -64,17 +122,38 @@ export default function CreateHabitScreen() {
 
     setLoading(true);
     try {
-      await habitsApi.create({
-        name: name.trim(),
-        icon,
-        color,
-        logType,
-        targetValue: logType === 'BINARY' ? 1 : target,
-        scheduleDays: scheduleDays.length === 7 ? null : scheduleDays,
-      });
+      const scheduleVal = scheduleDays.length === 7 ? null : scheduleDays;
+      const targetValNum = logType === 'BINARY' ? 1 : target;
+
+      if (isEdit && id) {
+        await habitsApi.update(parseInt(id, 10), {
+          name: name.trim(),
+          icon,
+          color,
+          logType,
+          targetValue: targetValNum,
+          scheduleDays: scheduleVal,
+          active: true,
+        });
+      } else {
+        await habitsApi.create({
+          name: name.trim(),
+          icon,
+          color,
+          logType,
+          targetValue: targetValNum,
+          scheduleDays: scheduleVal,
+        });
+      }
       router.back();
     } catch (error: any) {
-      Alert.alert(t('createHabit.errorTitle'), error.response?.data?.message || t('createHabit.errorCreate'));
+      const defaultError = isEdit
+        ? t('createHabit.errorUpdate', { defaultValue: 'Could not save habit' })
+        : t('createHabit.errorCreate');
+      Alert.alert(
+        t('createHabit.errorTitle'),
+        error.response?.data?.message || defaultError
+      );
     } finally {
       setLoading(false);
     }
@@ -88,8 +167,16 @@ export default function CreateHabitScreen() {
           <Pressable onPress={() => router.back()} style={styles.backBtn}>
             <MaterialCommunityIcons name="close" size={24} color={colors.text} />
           </Pressable>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>{t('createHabit.title')}</Text>
-          <View style={{ width: 40 }} />
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            {isEdit ? t('createHabit.editTitle', { defaultValue: 'Edit Habit' }) : t('createHabit.title')}
+          </Text>
+          {isEdit ? (
+            <Pressable onPress={handleDelete} style={styles.backBtn}>
+              <MaterialCommunityIcons name="trash-can-outline" size={24} color={colors.error} />
+            </Pressable>
+          ) : (
+            <View style={{ width: 40 }} />
+          )}
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -147,13 +234,20 @@ export default function CreateHabitScreen() {
 
           {/* Log Type */}
           <Text style={[styles.label, { color: colors.textSecondary }]}>{t('createHabit.labelLogType')}</Text>
+          {hasLogs && (
+            <Text style={[styles.typeWarningText, { color: colors.error }]}>
+              {t('createHabit.cannotChangeTypeHint', { defaultValue: 'Cannot change type once a habit has logged entries' })}
+            </Text>
+          )}
           <View style={styles.typeRow}>
             <Pressable
+              disabled={hasLogs}
               style={[
                 styles.typeOption,
                 {
                   backgroundColor: logType === 'BINARY' ? colors.accentDim : colors.card,
                   borderColor: logType === 'BINARY' ? colors.accent : colors.border,
+                  opacity: hasLogs && logType !== 'BINARY' ? 0.4 : 1,
                 },
               ]}
               onPress={() => setLogType('BINARY')}
@@ -172,11 +266,13 @@ export default function CreateHabitScreen() {
             </Pressable>
 
             <Pressable
+              disabled={hasLogs}
               style={[
                 styles.typeOption,
                 {
                   backgroundColor: logType === 'NUMERIC' ? colors.accentDim : colors.card,
                   borderColor: logType === 'NUMERIC' ? colors.accent : colors.border,
+                  opacity: hasLogs && logType !== 'NUMERIC' ? 0.4 : 1,
                 },
               ]}
               onPress={() => setLogType('NUMERIC')}
@@ -248,17 +344,19 @@ export default function CreateHabitScreen() {
           </View>
         </ScrollView>
 
-        {/* Create button */}
+        {/* Save/Create button */}
         <View style={[styles.footer, { borderTopColor: colors.border }]}>
           <Pressable
             style={[styles.createButton, { backgroundColor: colors.accent, opacity: loading ? 0.7 : 1 }]}
-            onPress={handleCreate}
+            onPress={handleSave}
             disabled={loading}
           >
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.createButtonText}>{t('createHabit.createButton')}</Text>
+              <Text style={styles.createButtonText}>
+                {isEdit ? t('createHabit.saveButton', { defaultValue: 'Save Changes' }) : t('createHabit.createButton')}
+              </Text>
             )}
           </Pressable>
         </View>
@@ -327,6 +425,11 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
+  },
+  typeWarningText: {
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.medium,
+    marginBottom: Spacing.sm,
   },
   typeRow: {
     flexDirection: 'row',

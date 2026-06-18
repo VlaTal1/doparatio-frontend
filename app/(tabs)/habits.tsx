@@ -93,6 +93,8 @@ export default function HabitsScreen() {
               todayDate={today}
               onLog={handleLog}
               onCancelLog={handleCancelLog}
+              showHeatmap={true}
+              onPress={() => router.push(`/habit/create?id=${habit.id}`)}
             />
           ))
         ) : (
