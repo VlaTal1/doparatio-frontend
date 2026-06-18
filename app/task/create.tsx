@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import {
   Switch,
   Modal,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -40,6 +40,9 @@ export default function CreateTaskScreen() {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const router = useRouter();
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const isEdit = !!id;
+
   const [name, setName] = useState('');
   const [difficulty, setDifficulty] = useState<Difficulty>('ROUTINE');
   const [recurring, setRecurring] = useState(false);
@@ -48,6 +51,34 @@ export default function CreateTaskScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isEdit && id) {
+      const taskId = parseInt(id, 10);
+      if (!isNaN(taskId)) {
+        setLoading(true);
+        tasksApi.getById(taskId)
+          .then((task) => {
+            setName(task.name);
+            setDifficulty(task.difficulty);
+            setRecurring(task.recurring);
+            if (task.scheduleDays) {
+              setScheduleDays(task.scheduleDays);
+            }
+            if (task.dueDate) {
+              setDueDate(new Date(task.dueDate));
+            }
+          })
+          .catch((error) => {
+            console.error('Fetch task details error:', error);
+            Alert.alert(t('createTask.errorTitle'), t('createTask.errorLoad'));
+          })
+          .finally(() => {
+            setLoading(false);
+          });
+      }
+    }
+  }, [id, isEdit]);
 
   const DAY_LABELS = [
     t('createTask.days.0'),
@@ -65,7 +96,7 @@ export default function CreateTaskScreen() {
     );
   };
 
-  const handleCreate = async () => {
+  const handleSave = async () => {
     if (!name.trim()) {
       Alert.alert(t('createTask.errorTitle'), t('createTask.emptyName'));
       return;
@@ -73,20 +104,37 @@ export default function CreateTaskScreen() {
 
     setLoading(true);
     try {
-      await tasksApi.create({
-        name: name.trim(),
-        difficulty,
-        recurring,
-        scheduleDays: recurring && scheduleDays.length < 7 ? scheduleDays : undefined,
-        dueDate: !recurring ? format(dueDate, 'yyyy-MM-dd') : undefined,
-      });
+      const scheduleDaysVal = recurring && scheduleDays.length < 7 ? scheduleDays : undefined;
+      const dueDateVal = !recurring ? format(dueDate, 'yyyy-MM-dd') : undefined;
+
+      if (isEdit && id) {
+        await tasksApi.update(parseInt(id, 10), {
+          name: name.trim(),
+          difficulty,
+          recurring,
+          scheduleDays: scheduleDaysVal || null,
+          dueDate: dueDateVal || null,
+          active: true,
+        });
+      } else {
+        await tasksApi.create({
+          name: name.trim(),
+          difficulty,
+          recurring,
+          scheduleDays: scheduleDaysVal,
+          dueDate: dueDateVal,
+        });
+      }
       if (router.canGoBack()) {
         router.back();
       } else {
         router.replace('/(tabs)/tasks');
       }
     } catch (error: any) {
-      Alert.alert(t('createTask.errorTitle'), error.response?.data?.message || t('createTask.errorCreate'));
+      const defaultError = isEdit
+        ? t('createTask.errorUpdate', { defaultValue: 'Could not save task' })
+        : t('createTask.errorCreate');
+      Alert.alert(t('createTask.errorTitle'), error.response?.data?.message || defaultError);
     } finally {
       setLoading(false);
     }
@@ -112,7 +160,9 @@ export default function CreateTaskScreen() {
           >
             <MaterialCommunityIcons name="close" size={24} color={colors.text} />
           </Pressable>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>{t('createTask.title')}</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+             {isEdit ? t('createTask.editTitle', { defaultValue: 'Edit Task' }) : t('createTask.title')}
+           </Text>
           <View style={{ width: 40 }} />
         </View>
 
@@ -245,13 +295,15 @@ export default function CreateTaskScreen() {
         <View style={[styles.footer, { borderTopColor: colors.border }]}>
           <Pressable
             style={[styles.createButton, { backgroundColor: colors.accent, opacity: loading ? 0.7 : 1 }]}
-            onPress={handleCreate}
+            onPress={handleSave}
             disabled={loading}
           >
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.createButtonText}>{t('createTask.createButton')}</Text>
+              <Text style={styles.createButtonText}>
+                {isEdit ? t('createTask.saveButton', { defaultValue: 'Save Changes' }) : t('createTask.createButton')}
+              </Text>
             )}
           </Pressable>
         </View>

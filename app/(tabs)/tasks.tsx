@@ -137,6 +137,7 @@ export default function TasksScreen() {
               todayDate={today}
               onLog={handleLog}
               onCancelLog={handleCancelLog}
+              onPress={() => router.push(`/task/${task.id}`)}
             />
           ))
         ) : (

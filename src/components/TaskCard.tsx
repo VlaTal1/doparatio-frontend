@@ -12,9 +12,10 @@ interface TaskCardProps {
   todayDate: string;
   onLog: (taskId: number) => void;
   onCancelLog: (taskId: number) => void;
+  onPress?: () => void;
 }
 
-export function TaskCard({ task, todayDate, onLog, onCancelLog }: TaskCardProps) {
+export function TaskCard({ task, todayDate, onLog, onCancelLog, onPress }: TaskCardProps) {
   const { colors } = useTheme();
   const scale = useSharedValue(1);
   const config = DIFFICULTY_CONFIG[task.difficulty];
@@ -35,8 +36,8 @@ export function TaskCard({ task, todayDate, onLog, onCancelLog }: TaskCardProps)
     transform: [{ scale: scale.value }],
   }));
 
-  const handlePress = () => {
-    scale.value = withSpring(0.95, {}, () => {
+  const handleCheckboxPress = () => {
+    scale.value = withSpring(0.92, {}, () => {
       scale.value = withSpring(1);
     });
     if (isCompleted) {
@@ -46,9 +47,15 @@ export function TaskCard({ task, todayDate, onLog, onCancelLog }: TaskCardProps)
     }
   };
 
+  const handleCardPress = () => {
+    if (onPress) {
+      onPress();
+    }
+  };
+
   return (
     <Animated.View style={animatedStyle}>
-      <Pressable onPress={handlePress}>
+      <Pressable onPress={handleCardPress}>
         <View
           style={[
             styles.container,
@@ -62,19 +69,21 @@ export function TaskCard({ task, todayDate, onLog, onCancelLog }: TaskCardProps)
         >
           <View style={styles.row}>
             {/* Checkbox */}
-            <View
-              style={[
-                styles.checkbox,
-                {
-                  borderColor: isCompleted ? colors.success : colors.textSecondary,
-                  backgroundColor: isCompleted ? colors.success : 'transparent',
-                },
-              ]}
-            >
-              {isCompleted && (
-                <MaterialCommunityIcons name="check" size={14} color="#fff" />
-              )}
-            </View>
+            <Pressable onPress={handleCheckboxPress} style={styles.checkboxPressable}>
+              <View
+                style={[
+                  styles.checkbox,
+                  {
+                    borderColor: isCompleted ? colors.success : colors.textSecondary,
+                    backgroundColor: isCompleted ? colors.success : 'transparent',
+                  },
+                ]}
+              >
+                {isCompleted && (
+                  <MaterialCommunityIcons name="check" size={14} color="#fff" />
+                )}
+              </View>
+            </Pressable>
 
             {/* Info */}
             <View style={styles.info}>
@@ -174,5 +183,9 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: FontSize.xs,
     fontWeight: FontWeight.bold,
+  },
+  checkboxPressable: {
+    padding: Spacing.xs,
+    margin: -Spacing.xs,
   },
 });

@@ -153,6 +153,10 @@
     "recurringHint": "Task available every day",
     "rewardHint": "For completion you'll earn +{{minutes}} minutes of screen time",
     "createButton": "Create Task",
+    "editTitle": "Edit Task",
+    "saveButton": "Save Changes",
+    "deleteConfirmTitle": "Delete Task",
+    "deleteConfirmMsg": "Are you sure you want to delete this task?",
     "labelDueDate": "Due Date",
     "dueDatePlaceholder": "Select a date",
     "calendarTitle": "Select Due Date",
@@ -160,6 +164,9 @@
     "errorTitle": "Error",
     "emptyName": "Please enter a task name",
     "errorCreate": "Could not create task",
+    "errorLoad": "Could not load task details",
+    "errorDelete": "Could not delete task",
+    "errorUpdate": "Could not save task",
     "days": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
   },
 

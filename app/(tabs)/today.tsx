@@ -166,6 +166,7 @@ export default function TodayScreen() {
                   todayDate={today}
                   onLog={handleLogTask}
                   onCancelLog={handleCancelTaskLog}
+                  onPress={() => router.push(`/task/${task.id}`)}
                 />
               ))}
             </View>
