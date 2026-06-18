@@ -9,7 +9,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 import { useTheme } from '../contexts/ThemeContext';
 import { BorderRadius, FontSize, FontWeight, Spacing, Shadows } from '../constants/theme';
 
@@ -19,7 +19,6 @@ interface BalanceCardProps {
 
 export function BalanceCard({ balance }: BalanceCardProps) {
   const { colors } = useTheme();
-  const { t } = useTranslation();
   const pulse = useSharedValue(1);
   const glow = useSharedValue(0.2);
 
@@ -67,7 +66,7 @@ export function BalanceCard({ balance }: BalanceCardProps) {
     >
       <View style={styles.labelRow}>
         <MaterialCommunityIcons name="timer-sand" size={18} color={colors.accent} />
-        <Text style={[styles.label, { color: colors.textSecondary }]}>{t('balance.earnedTime')}</Text>
+        <Text style={[styles.label, { color: colors.textSecondary }]}>{i18n.t('balance.earnedTime')}</Text>
       </View>
       <Animated.View style={[styles.valueRow, animatedStyle]}>
         <Text style={[styles.value, { color: colors.accent }]}>
@@ -75,7 +74,7 @@ export function BalanceCard({ balance }: BalanceCardProps) {
         </Text>
       </Animated.View>
       <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-        {t('balance.minutesAvailable', { count: balance })}
+        {i18n.t('balance.minutesAvailable', { count: balance })}
       </Text>
     </Animated.View>
   );

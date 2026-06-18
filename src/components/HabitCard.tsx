@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 import { useTheme } from '../contexts/ThemeContext';
 import { HabitDTO } from '../types';
 import { BorderRadius, FontSize, FontWeight, Spacing, Shadows } from '../constants/theme';
@@ -16,7 +16,6 @@ interface HabitCardProps {
 
 export function HabitCard({ habit, todayDate, onLog, onCancelLog }: HabitCardProps) {
   const { colors } = useTheme();
-  const { t } = useTranslation();
   const scale = useSharedValue(1);
 
   const todayLog = habit.logs?.find((l) => l.logDate === todayDate);
@@ -102,7 +101,7 @@ export function HabitCard({ habit, todayDate, onLog, onCancelLog }: HabitCardPro
 
           {isCompleted && (
             <View style={[styles.completedBadge, { backgroundColor: `${habitColor}15` }]}>
-              <Text style={[styles.completedText, { color: habitColor }]}>{t('habitCard.completed')}</Text>
+              <Text style={[styles.completedText, { color: habitColor }]}>{i18n.t('habitCard.completed')}</Text>
             </View>
           )}
         </View>

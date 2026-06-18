@@ -12,6 +12,7 @@ i18n.use(initReactI18next).init({
   interpolation: {
     escapeValue: false,
   },
+  initImmediate: false, // Synchronous init — required for react-native-reanimated compatibility
 });
 
 export default i18n;

@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 import { useTheme } from '../contexts/ThemeContext';
 import { TaskDTO, DIFFICULTY_CONFIG } from '../types';
 import { BorderRadius, FontSize, FontWeight, Spacing, Shadows } from '../constants/theme';
@@ -16,7 +16,6 @@ interface TaskCardProps {
 
 export function TaskCard({ task, todayDate, onLog, onCancelLog }: TaskCardProps) {
   const { colors } = useTheme();
-  const { t } = useTranslation();
   const scale = useSharedValue(1);
   const config = DIFFICULTY_CONFIG[task.difficulty];
 
@@ -95,7 +94,7 @@ export function TaskCard({ task, todayDate, onLog, onCancelLog }: TaskCardProps)
                 {task.recurring && (
                   <View style={styles.metaItem}>
                     <MaterialCommunityIcons name="repeat" size={12} color={colors.textSecondary} />
-                    <Text style={[styles.metaText, { color: colors.textSecondary }]}>{t('taskCard.recurring')}</Text>
+                    <Text style={[styles.metaText, { color: colors.textSecondary }]}>{i18n.t('taskCard.recurring')}</Text>
                   </View>
                 )}
                 {task.dueDate && (
