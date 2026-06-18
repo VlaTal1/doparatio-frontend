@@ -16,7 +16,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../src/contexts/ThemeContext';
 import { habitsApi } from '../../src/api/habits';
-import { HabitDTO, HabitLogDTO } from '../../src/types';
+import { HabitDTO, HabitLogDTO, LogType } from '../../src/types';
 import { BorderRadius, FontSize, FontWeight, Spacing } from '../../src/constants/theme';
 import { format } from 'date-fns';
 
@@ -37,6 +37,10 @@ export default function HabitDetailsScreen() {
   const [currentCalendarMonth, setCurrentCalendarMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+
+  const totalExecutions = habit ? calculateTotalExecutions(logs, habit.logType) : 0;
+  const completedDays = habit ? calculateCompletedDays(logs, habit.logType) : 0;
+  const bestStreak = habit ? calculateBestStreak(logs, habit.logType) : 0;
 
   const loadHabitDetails = useCallback(async () => {
     if (!id) return;
@@ -322,6 +326,47 @@ export default function HabitDetailsScreen() {
           </Pressable>
         </View>
 
+        {/* Statistics Section */}
+        <View style={styles.statsSection}>
+          {/* Best Streak - Full Width Card */}
+          <View style={[styles.streakCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={[styles.streakIconContainer, { backgroundColor: getRgbaColor(colors.accent, 0.15) }]}>
+              <MaterialCommunityIcons name="fire" size={32} color={colors.accent} />
+            </View>
+            <View style={styles.streakInfo}>
+              <Text style={[styles.streakValue, { color: colors.text }]}>
+                {t('habitDetails.streakDays', { count: bestStreak })}
+              </Text>
+              <Text style={[styles.streakLabel, { color: colors.textSecondary }]}>
+                {t('habitDetails.bestStreak')}
+              </Text>
+            </View>
+          </View>
+
+          {/* Bottom row: Completed Days & Total Executions */}
+          <View style={styles.statsRow}>
+            <View style={[styles.statsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <MaterialCommunityIcons name="calendar-check" size={24} color={colors.success} />
+              <Text style={[styles.statsValue, { color: colors.text }]}>
+                {completedDays}
+              </Text>
+              <Text style={[styles.statsLabel, { color: colors.textSecondary }]}>
+                {t('habitDetails.completedDays')}
+              </Text>
+            </View>
+
+            <View style={[styles.statsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <MaterialCommunityIcons name="check-all" size={24} color={colors.accent} />
+              <Text style={[styles.statsValue, { color: colors.text }]}>
+                {totalExecutions}
+              </Text>
+              <Text style={[styles.statsLabel, { color: colors.textSecondary }]}>
+                {t('habitDetails.totalExecutions')}
+              </Text>
+            </View>
+          </View>
+        </View>
+
         {/* History Calendar */}
         <View style={[styles.calendarCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.calendarTitle, { color: colors.text }]}>
@@ -464,6 +509,68 @@ function getRgbaColor(hex: string, opacity: number): string {
   const g = parseInt(cleanHex.substring(2, 4), 16);
   const b = parseInt(cleanHex.substring(4, 6), 16);
   return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+}
+
+function calculateTotalExecutions(
+  logsList: HabitLogDTO[],
+  logType: LogType
+): number {
+  if (logType === 'BINARY') {
+    return logsList.length;
+  } else {
+    return logsList.reduce((sum, l) => sum + (l.currentValue ?? 0), 0);
+  }
+}
+
+function calculateCompletedDays(
+  logsList: HabitLogDTO[],
+  logType: LogType
+): number {
+  if (logType === 'BINARY') {
+    return logsList.length;
+  } else {
+    return logsList.filter((l) => (l.currentValue ?? 0) >= 1).length;
+  }
+}
+
+function calculateBestStreak(
+  logsList: HabitLogDTO[],
+  logType: LogType
+): number {
+  const completedDates = logsList
+    .filter((l) => {
+      if (logType === 'BINARY') {
+        return true;
+      } else {
+        return (l.currentValue ?? 0) >= 1;
+      }
+    })
+    .map((l) => l.logDate)
+    .sort();
+
+  if (completedDates.length === 0) return 0;
+
+  let maxStreak = 0;
+  let currentStreak = 0;
+  let lastTime: number | null = null;
+
+  for (const dateStr of completedDates) {
+    const currentTime = new Date(dateStr).getTime();
+    if (lastTime === null) {
+      currentStreak = 1;
+    } else {
+      const diffDays = Math.round((currentTime - lastTime) / (1000 * 60 * 60 * 24));
+      if (diffDays === 1) {
+        currentStreak++;
+      } else if (diffDays > 1) {
+        currentStreak = 1;
+      }
+    }
+    maxStreak = Math.max(maxStreak, currentStreak);
+    lastTime = currentTime;
+  }
+
+  return maxStreak;
 }
 
 const styles = StyleSheet.create({
@@ -676,5 +783,58 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: FontSize.md,
     fontWeight: FontWeight.bold,
+  },
+  statsSection: {
+    gap: Spacing.md,
+  },
+  streakCard: {
+    flexDirection: 'row',
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    padding: Spacing.lg,
+    alignItems: 'center',
+    gap: Spacing.lg,
+  },
+  streakIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  streakInfo: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  streakValue: {
+    fontSize: FontSize.xl,
+    fontWeight: FontWeight.bold,
+  },
+  streakLabel: {
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.medium,
+    marginTop: 2,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+  },
+  statsCard: {
+    flex: 1,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    padding: Spacing.md,
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  statsValue: {
+    fontSize: FontSize.lg,
+    fontWeight: FontWeight.bold,
+    marginTop: Spacing.xs,
+  },
+  statsLabel: {
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.medium,
+    textAlign: 'center',
   },
 });

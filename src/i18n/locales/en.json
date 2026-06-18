@@ -159,6 +159,13 @@
     "days": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
   },
 
+  "habitDetails": {
+    "completedDays": "Completed days",
+    "totalExecutions": "Total executions",
+    "bestStreak": "Best streak",
+    "streakDays": "{{count}} days"
+  },
+
   "difficulty": {
     "ROUTINE": "Routine",
     "MEDIUM": "Medium",

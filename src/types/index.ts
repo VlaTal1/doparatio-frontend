@@ -37,6 +37,9 @@ export interface HabitDTO {
   active: boolean;
   userId?: string;
   logs?: HabitLogDTO[];
+  totalExecutions?: number;
+  completedDays?: number;
+  bestStreak?: number;
 }
 
 export interface UserBalanceDTO {
