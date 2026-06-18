@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Switch,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,6 +21,20 @@ import { useTheme } from '../../src/contexts/ThemeContext';
 import { tasksApi } from '../../src/api/tasks';
 import { Difficulty, DIFFICULTY_CONFIG } from '../../src/types';
 import { BorderRadius, FontSize, FontWeight, Spacing } from '../../src/constants/theme';
+import { format } from 'date-fns';
+
+const MODAL_WIDTH = 320;
+const CALENDAR_PADDING = 16;
+const GAP = 6;
+const CELL_SIZE = Math.floor((MODAL_WIDTH - CALENDAR_PADDING * 2 - (6 * GAP) - 4) / 7);
+
+function getRgbaColor(hex: string, opacity: number): string {
+  const cleanHex = hex.replace('#', '');
+  const r = parseInt(cleanHex.substring(0, 2), 16);
+  const g = parseInt(cleanHex.substring(2, 4), 16);
+  const b = parseInt(cleanHex.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+}
 
 export default function CreateTaskScreen() {
   const { colors } = useTheme();
@@ -29,6 +44,9 @@ export default function CreateTaskScreen() {
   const [difficulty, setDifficulty] = useState<Difficulty>('ROUTINE');
   const [recurring, setRecurring] = useState(false);
   const [scheduleDays, setScheduleDays] = useState<number[]>([1, 2, 3, 4, 5, 6, 7]);
+  const [dueDate, setDueDate] = useState<Date>(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [loading, setLoading] = useState(false);
 
   const DAY_LABELS = [
@@ -60,6 +78,7 @@ export default function CreateTaskScreen() {
         difficulty,
         recurring,
         scheduleDays: recurring && scheduleDays.length < 7 ? scheduleDays : undefined,
+        dueDate: !recurring ? format(dueDate, 'yyyy-MM-dd') : undefined,
       });
       if (router.canGoBack()) {
         router.back();
@@ -191,6 +210,28 @@ export default function CreateTaskScreen() {
             </>
           )}
 
+          {/* Due date selector (only for non-recurring) */}
+          {!recurring && (
+            <>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>
+                {t('createTask.labelDueDate')}
+              </Text>
+              <Pressable
+                style={[styles.dateSelectorField, { backgroundColor: colors.card, borderColor: colors.border }]}
+                onPress={() => {
+                  setCalendarMonth(dueDate);
+                  setShowDatePicker(true);
+                }}
+              >
+                <MaterialCommunityIcons name="calendar" size={20} color={colors.accent} />
+                <Text style={[styles.dateSelectorText, { color: colors.text }]}>
+                  {format(dueDate, 'MMMM d, yyyy')}
+                </Text>
+                <MaterialCommunityIcons name="chevron-down" size={20} color={colors.textSecondary} />
+              </Pressable>
+            </>
+          )}
+
           {/* Reward hint */}
           <View style={[styles.rewardHint, { backgroundColor: `${difficultyColor(difficulty)}15` }]}>
             <Text style={styles.rewardEmoji}>{DIFFICULTY_CONFIG[difficulty].emoji}</Text>
@@ -214,7 +255,136 @@ export default function CreateTaskScreen() {
             )}
           </Pressable>
         </View>
-      </KeyboardAvoidingView>
+        </KeyboardAvoidingView>
+
+      {/* Due Date Calendar Picker Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showDatePicker}
+        onRequestClose={() => setShowDatePicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.modalHeaderTitle, { color: colors.text }]}>
+              {t('createTask.calendarTitle')}
+            </Text>
+
+            {/* Month selector header */}
+            <View style={styles.calendarHeader}>
+              <Pressable
+                onPress={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
+                style={styles.monthNavBtn}
+              >
+                <MaterialCommunityIcons name="chevron-left" size={24} color={colors.text} />
+              </Pressable>
+              <Text style={[styles.monthLabelText, { color: colors.text }]}>
+                {format(calendarMonth, 'MMMM yyyy')}
+              </Text>
+              <Pressable
+                onPress={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
+                style={styles.monthNavBtn}
+              >
+                <MaterialCommunityIcons name="chevron-right" size={24} color={colors.text} />
+              </Pressable>
+            </View>
+
+            {/* Days of week headers */}
+            <View style={styles.weekDaysRow}>
+              {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, idx) => (
+                <Text key={idx} style={[styles.weekDayHeaderCell, { color: colors.textSecondary }]}>
+                  {day}
+                </Text>
+              ))}
+            </View>
+
+            {/* Days grid */}
+            <View style={styles.daysGrid}>
+              {(() => {
+                const year = calendarMonth.getFullYear();
+                const month = calendarMonth.getMonth();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                const startDay = new Date(year, month, 1).getDay();
+                const startOffset = startDay === 0 ? 6 : startDay - 1;
+
+                const cells: React.ReactNode[] = [];
+                const selectedStr = format(dueDate, 'yyyy-MM-dd');
+                const todayStr = format(new Date(), 'yyyy-MM-dd');
+
+                for (let i = 0; i < startOffset; i++) {
+                  cells.push(<View key={`empty-${i}`} style={styles.dayCellPlaceholder} />);
+                }
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                  const cellDate = new Date(year, month, day);
+                  const cellDateStr = format(cellDate, 'yyyy-MM-dd');
+                  const isSelected = cellDateStr === selectedStr;
+                  const isToday = cellDateStr === todayStr;
+
+                  const cellColor = isSelected ? colors.accent : colors.card;
+
+                  cells.push(
+                    <Pressable
+                      key={`day-${day}`}
+                      onPress={() => {
+                        setDueDate(cellDate);
+                        setShowDatePicker(false);
+                      }}
+                      style={({ pressed }) => [
+                        styles.dayCell,
+                        {
+                          backgroundColor: cellColor,
+                          borderColor: isToday ? colors.accent : isSelected ? colors.accent : colors.border,
+                          borderWidth: isToday || isSelected ? 1.5 : 1,
+                          opacity: pressed ? 0.8 : 1,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.dayCellText,
+                          {
+                            color: isSelected ? '#fff' : colors.text,
+                            fontWeight: isToday || isSelected ? FontWeight.bold : FontWeight.regular,
+                          },
+                        ]}
+                      >
+                        {day}
+                      </Text>
+                    </Pressable>
+                  );
+                }
+
+                const totalCells = startOffset + daysInMonth;
+                const endOffset = (7 - (totalCells % 7)) % 7;
+                for (let i = 0; i < endOffset; i++) {
+                  cells.push(<View key={`empty-end-${i}`} style={styles.dayCellPlaceholder} />);
+                }
+
+                return cells;
+              })()}
+            </View>
+
+            {/* Close button */}
+            <Pressable
+              onPress={() => setShowDatePicker(false)}
+              style={({ pressed }) => [
+                styles.modalDoneBtn,
+                {
+                  backgroundColor: colors.border,
+                  marginTop: Spacing.xl,
+                  opacity: pressed ? 0.8 : 1,
+                  transform: [{ scale: pressed ? 0.98 : 1 }],
+                },
+              ]}
+            >
+              <Text style={[styles.modalDoneBtnText, { color: colors.text }]}>
+                {t('createTask.doneButton')}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -349,6 +519,105 @@ const styles = StyleSheet.create({
   createButtonText: {
     color: '#fff',
     fontSize: FontSize.lg,
+    fontWeight: FontWeight.bold,
+  },
+  dateSelectorField: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: BorderRadius.lg,
+    paddingHorizontal: Spacing.lg,
+    height: 52,
+    gap: Spacing.md,
+  },
+  dateSelectorText: {
+    flex: 1,
+    fontSize: FontSize.md,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.xl,
+  },
+  modalContent: {
+    width: MODAL_WIDTH,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    padding: CALENDAR_PADDING,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  modalHeaderTitle: {
+    fontSize: FontSize.lg,
+    fontWeight: FontWeight.bold,
+    marginBottom: Spacing.md,
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: Spacing.md,
+  },
+  monthNavBtn: {
+    padding: Spacing.sm,
+  },
+  monthLabelText: {
+    fontSize: FontSize.md,
+    fontWeight: FontWeight.semibold,
+    textTransform: 'capitalize',
+  },
+  weekDaysRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    columnGap: GAP,
+    marginBottom: Spacing.sm,
+    width: '100%',
+  },
+  weekDayHeaderCell: {
+    width: CELL_SIZE,
+    textAlign: 'center',
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.semibold,
+  },
+  daysGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    columnGap: GAP,
+    rowGap: Spacing.sm,
+    width: '100%',
+  },
+  dayCell: {
+    width: CELL_SIZE,
+    height: CELL_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: CELL_SIZE / 2,
+    borderWidth: 1,
+  },
+  dayCellPlaceholder: {
+    width: CELL_SIZE,
+    height: CELL_SIZE,
+  },
+  dayCellText: {
+    fontSize: FontSize.sm,
+  },
+  modalDoneBtn: {
+    width: '100%',
+    height: 50,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalDoneBtnText: {
+    fontSize: FontSize.md,
     fontWeight: FontWeight.bold,
   },
 });
