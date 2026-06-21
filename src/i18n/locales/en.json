@@ -174,7 +174,9 @@
     "completedDays": "Completed days",
     "totalExecutions": "Total executions",
     "bestStreak": "Best streak",
-    "streakDays": "{{count}} days"
+    "streakDays": "{{count}} days",
+    "pinToWidget": "Pin to Widget",
+    "pinnedToWidget": "Pinned to Widget"
   },
 
   "difficulty": {

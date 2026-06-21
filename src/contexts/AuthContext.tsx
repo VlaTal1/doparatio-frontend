@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { sharedGroup } from '../utils/sharedGroup';
+import { API_URL } from '../constants/config';
 
 interface AuthContextType {
   session: Session | null;
@@ -30,12 +32,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      if (session?.access_token) {
+        sharedGroup.setAuthToken(session.access_token);
+        sharedGroup.setApiUrl(API_URL);
+      }
       setLoading(false);
     });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      if (session?.access_token) {
+        sharedGroup.setAuthToken(session.access_token);
+        sharedGroup.setApiUrl(API_URL);
+      } else {
+        sharedGroup.setAuthToken('');
+      }
     });
 
     return () => subscription.unsubscribe();

@@ -16,6 +16,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../src/contexts/ThemeContext';
 import { habitsApi } from '../../src/api/habits';
+import { sharedGroup } from '../../src/utils/sharedGroup';
 import { HabitDTO, HabitLogDTO, LogType } from '../../src/types';
 import { BorderRadius, FontSize, FontWeight, Spacing } from '../../src/constants/theme';
 import { format } from 'date-fns';
@@ -59,6 +60,7 @@ export default function HabitDetailsScreen() {
     }
   }, [id, t]);
 
+
   useFocusEffect(
     useCallback(() => {
       loadHabitDetails();
@@ -87,6 +89,7 @@ export default function HabitDetailsScreen() {
           return [...prev, savedLog];
         }
       });
+      await sharedGroup.reloadWidget();
     } catch (error: any) {
       Alert.alert(t('common.error'), error.response?.data?.message || t('habits.errorLog'));
     }
@@ -103,10 +106,12 @@ export default function HabitDetailsScreen() {
           return prev.map((l) => (l.logDate === dateStr ? result : l));
         }
       });
+      await sharedGroup.reloadWidget();
     } catch (error: any) {
       Alert.alert(t('common.error'), error.response?.data?.message || t('habits.errorCancelLog'));
     }
   };
+
 
   const handleDayPress = (dateStr: string) => {
     if (!habit) return;
@@ -306,6 +311,7 @@ export default function HabitDetailsScreen() {
             )}
           </View>
         </View>
+
 
         {/* Edit / Delete Actions */}
         <View style={styles.actionsRow}>
@@ -836,5 +842,19 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     fontWeight: FontWeight.medium,
     textAlign: 'center',
+  },
+  pinBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.round,
+    gap: Spacing.xs,
+    marginTop: Spacing.sm,
+  },
+  pinBtnText: {
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.semibold,
   },
 });

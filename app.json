@@ -9,7 +9,13 @@
     "scheme": "doparatio",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.doparatio.app"
+      "bundleIdentifier": "com.doparatio.app",
+      "deploymentTarget": "17.0",
+      "entitlements": {
+        "com.apple.security.application-groups": [
+          "group.com.doparatio.app"
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -26,7 +32,8 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      "./plugins/withHabitWidget"
     ]
   }
 }

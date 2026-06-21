@@ -20,6 +20,7 @@ import { EmptyState } from '../../src/components/EmptyState';
 import { habitsApi } from '../../src/api/habits';
 import { tasksApi } from '../../src/api/tasks';
 import { balanceApi } from '../../src/api/balance';
+import { sharedGroup } from '../../src/utils/sharedGroup';
 import { HabitDTO, TaskDTO } from '../../src/types';
 import { FontSize, FontWeight, Spacing } from '../../src/constants/theme';
 
@@ -46,10 +47,36 @@ export default function TodayScreen() {
       setBalance(balanceData.balance);
       setHabits(habitsData.filter((h) => h.active));
       setTasks(tasksData.filter((t) => t.active));
+      await sharedGroup.setHabitsCache(habitsData.filter((h) => h.active));
+      
+      setTimeout(async () => {
+        const cache = await sharedGroup.getDebugKey('widget_habits_cache');
+        const called = await sharedGroup.getDebugKey('debug_entities_called');
+        const fetched = await sharedGroup.getDebugKey('debug_entities_fetched');
+        const result = await sharedGroup.getDebugKey('debug_entities_result');
+        const timelineHabit = await sharedGroup.getDebugKey('debug_timeline_habit');
+        const suggestedCalled = await sharedGroup.getDebugKey('debug_suggested_called');
+        const suggestedFetched = await sharedGroup.getDebugKey('debug_suggested_fetched');
+        const defaultResult = await sharedGroup.getDebugKey('debug_default_result');
+        const fallback = await sharedGroup.getDebugKey('debug_timeline_fallback');
+        
+        console.warn('WIDGET DEBUG LOGS (TODAY):', {
+          cache,
+          called,
+          fetched,
+          result,
+          timelineHabit,
+          suggestedCalled,
+          suggestedFetched,
+          defaultResult,
+          fallback
+        });
+      }, 500);
     } catch (error: any) {
       console.error('Load error:', error);
     }
   }, [today]);
+
 
   useFocusEffect(
     useCallback(() => {
@@ -67,6 +94,7 @@ export default function TodayScreen() {
     try {
       await habitsApi.log(habitId, today);
       await loadData();
+      await sharedGroup.reloadWidget();
     } catch (error: any) {
       Alert.alert(t('common.error'), error.response?.data?.message || t('today.errorLogHabit'));
     }
@@ -76,10 +104,12 @@ export default function TodayScreen() {
     try {
       await habitsApi.cancelLog(habitId, today);
       await loadData();
+      await sharedGroup.reloadWidget();
     } catch (error: any) {
       Alert.alert(t('common.error'), error.response?.data?.message || t('today.errorCancelHabitLog'));
     }
   };
+
 
   const handleLogTask = async (taskId: number) => {
     try {
