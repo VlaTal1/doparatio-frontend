@@ -619,7 +619,7 @@ const styles = StyleSheet.create({
   iconContainer: {
     width: 72,
     height: 72,
-    borderRadius: 36,
+    borderRadius: BorderRadius.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -709,7 +709,7 @@ const styles = StyleSheet.create({
     height: CELL_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: CELL_SIZE / 2,
+    borderRadius: BorderRadius.sm,
     borderWidth: 1,
   },
   dayCellPlaceholder: {
