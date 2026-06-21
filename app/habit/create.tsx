@@ -19,6 +19,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../src/contexts/ThemeContext';
 import { habitsApi } from '../../src/api/habits';
+import { sharedGroup } from '../../src/utils/sharedGroup';
 import { LogType, HabitLogDTO } from '../../src/types';
 import { BorderRadius, FontSize, FontWeight, Spacing } from '../../src/constants/theme';
 import { format } from 'date-fns';
@@ -126,6 +127,8 @@ export default function CreateHabitScreen() {
           scheduleDays: scheduleVal,
         });
       }
+      // Reload widget timelines so changes to icon/name/color are reflected immediately
+      await sharedGroup.reloadWidget();
       if (router.canGoBack()) {
         router.back();
       } else {
