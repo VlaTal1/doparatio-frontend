@@ -59,18 +59,6 @@ export default function TodayScreen() {
         const suggestedFetched = await sharedGroup.getDebugKey('debug_suggested_fetched');
         const defaultResult = await sharedGroup.getDebugKey('debug_default_result');
         const fallback = await sharedGroup.getDebugKey('debug_timeline_fallback');
-        
-        console.warn('WIDGET DEBUG LOGS (TODAY):', {
-          cache,
-          called,
-          fetched,
-          result,
-          timelineHabit,
-          suggestedCalled,
-          suggestedFetched,
-          defaultResult,
-          fallback
-        });
       }, 500);
     } catch (error: any) {
       console.error('Load error:', error);
