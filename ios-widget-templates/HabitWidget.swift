@@ -91,7 +91,7 @@ func getHeatmapCells(logs: [HabitLogDTO]?, colorHex: String, logType: String, ta
     guard let currentMonday = calendar.date(from: components) else { return [] }
     
     var columns: [[HeatmapCell]] = []
-    let numWeeks = 20
+    let numWeeks = 28
     
     for w in 0..<numWeeks {
         var weekCells: [HeatmapCell] = []
@@ -182,56 +182,44 @@ struct HabitWidgetEntryView : View {
     
     var body: some View {
         if let habit = entry.habit {
-            HStack(spacing: 16) {
-                // Left side: Habit Info
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack {
-                        Text(habit.icon)
-                            .font(.system(size: 28))
-                            .padding(8)
-                            .background(Color(hex: habit.color).opacity(0.15))
-                            .cornerRadius(18)
+            VStack(alignment: .leading, spacing: 10) {
+                // Top row: Icon, Name and Streak
+                HStack(alignment: .center, spacing: 10) {
+                    Text(habit.icon)
+                        .font(.system(size: 24))
+                        .padding(6)
+                        .background(Color(hex: habit.color).opacity(0.15))
+                        .cornerRadius(12)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(habit.name)
+                            .font(.system(size: 14, weight: .bold))
+                            .lineLimit(1)
+                            .foregroundColor(.primary)
                         
-                        Spacer()
+                        Text("🔥 \(calculateStreak(logs: habit.logs ?? [])) days")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(.orange)
                     }
                     
-                    Text(habit.name)
-                        .font(.system(size: 14, weight: .bold))
-                        .lineLimit(2)
-                        .foregroundColor(.primary)
-                    
                     Spacer()
-                    
-                    Text("STREAK")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundColor(.secondary)
-                    
-                    Text("🔥 \(calculateStreak(logs: habit.logs ?? [])) days")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.orange)
                 }
-                .frame(width: 85)
                 
-                // Right side: Heatmap Grid
-                VStack(alignment: .trailing, spacing: 6) {
-                    Text("Activity (Last 20 Weeks)")
-                        .font(.system(size: 9, weight: .semibold))
-                        .foregroundColor(.secondary)
-                        .padding(.trailing, 2)
+                Spacer(minLength: 0)
+                
+                // Bottom row: Heatmap Grid spanning full width
+                HStack(spacing: 2) {
+                    let columns = getHeatmapCells(
+                        logs: habit.logs,
+                        colorHex: habit.color,
+                        logType: habit.logType,
+                        targetValue: habit.targetValue
+                    )
                     
-                    HStack(spacing: 2) {
-                        let columns = getHeatmapCells(
-                            logs: habit.logs,
-                            colorHex: habit.color,
-                            logType: habit.logType,
-                            targetValue: habit.targetValue
-                        )
-                        
-                        ForEach(0..<columns.count, id: \.self) { colIdx in
-                            VStack(spacing: 2) {
-                                ForEach(columns[colIdx]) { cell in
-                                    cellView(cell: cell, color: Color(hex: habit.color))
-                                }
+                    ForEach(0..<columns.count, id: \.self) { colIdx in
+                        VStack(spacing: 2) {
+                            ForEach(columns[colIdx]) { cell in
+                                cellView(cell: cell, color: Color(hex: habit.color))
                             }
                         }
                     }
@@ -255,15 +243,15 @@ struct HabitWidgetEntryView : View {
     @ViewBuilder
     func cellView(cell: HeatmapCell, color: Color) -> some View {
         if cell.isFuture {
-            RoundedRectangle(cornerRadius: 1.5)
+            RoundedRectangle(cornerRadius: 2.0)
                 .fill(Color.clear)
-                .frame(width: 8, height: 8)
+                .frame(width: 8.5, height: 8.5)
         } else {
-            RoundedRectangle(cornerRadius: 1.5)
+            RoundedRectangle(cornerRadius: 2.0)
                 .fill(cell.progress > 0 ? color.opacity(0.15 + 0.85 * cell.progress) : Color(.systemGray4))
-                .frame(width: 8, height: 8)
+                .frame(width: 8.5, height: 8.5)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 1.5)
+                    RoundedRectangle(cornerRadius: 2.0)
                         .stroke(Color.orange, lineWidth: cell.isToday ? 1 : 0)
                 )
         }

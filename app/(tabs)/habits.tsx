@@ -44,16 +44,6 @@ export default function HabitsScreen() {
         const timelineHabit = await sharedGroup.getDebugKey('debug_timeline_habit');
         const suggestedCalled = await sharedGroup.getDebugKey('debug_suggested_called');
         const suggestedFetched = await sharedGroup.getDebugKey('debug_suggested_fetched');
-        
-        console.warn('WIDGET DEBUG LOGS:', {
-          cache,
-          called,
-          fetched,
-          result,
-          timelineHabit,
-          suggestedCalled,
-          suggestedFetched
-        });
       }, 500);
     } catch (error) {
       console.error('Load habits error:', error);
