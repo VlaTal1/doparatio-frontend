@@ -220,6 +220,8 @@ struct HabitWidgetEntryView : View {
                         VStack(spacing: 2) {
                             ForEach(columns[colIdx]) { cell in
                                 cellView(cell: cell, color: Color(hex: habit.color))
+                                    .aspectRatio(1, contentMode: .fit)
+                                    .frame(maxWidth: .infinity)
                             }
                         }
                     }
@@ -243,15 +245,13 @@ struct HabitWidgetEntryView : View {
     @ViewBuilder
     func cellView(cell: HeatmapCell, color: Color) -> some View {
         if cell.isFuture {
-            RoundedRectangle(cornerRadius: 2.0)
+            RoundedRectangle(cornerRadius: 1.5)
                 .fill(Color.clear)
-                .frame(width: 8.5, height: 8.5)
         } else {
-            RoundedRectangle(cornerRadius: 2.0)
+            RoundedRectangle(cornerRadius: 1.5)
                 .fill(cell.progress > 0 ? color.opacity(0.15 + 0.85 * cell.progress) : Color(.systemGray4))
-                .frame(width: 8.5, height: 8.5)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 2.0)
+                    RoundedRectangle(cornerRadius: 1.5)
                         .stroke(Color.orange, lineWidth: cell.isToday ? 1 : 0)
                 )
         }
