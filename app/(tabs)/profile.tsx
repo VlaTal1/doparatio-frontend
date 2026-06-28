@@ -6,6 +6,8 @@ import {
   Pressable,
   ScrollView,
   RefreshControl,
+  Platform,
+  Alert,
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useTheme } from '../../src/contexts/ThemeContext';
 import { balanceApi } from '../../src/api/balance';
+import { sharedGroup } from '../../src/utils/sharedGroup';
 import { BorderRadius, FontSize, FontWeight, Spacing, Shadows } from '../../src/constants/theme';
 
 export default function ProfileScreen() {
@@ -22,26 +25,82 @@ export default function ProfileScreen() {
   const { t } = useTranslation();
   const [balance, setBalance] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  
+  const [isAndroid] = useState(Platform.OS === 'android');
+  const [blockerEnabled, setBlockerEnabled] = useState(false);
+  const [hasUsageStats, setHasUsageStats] = useState(false);
+  const [hasOverlay, setHasOverlay] = useState(false);
 
   const loadBalance = useCallback(async () => {
     try {
       const data = await balanceApi.get();
       setBalance(data.balance);
+      await sharedGroup.setTimeBalance(data.balance);
     } catch (error) {
       console.error('Load balance error:', error);
+    }
+  }, []);
+
+  const checkBlockerStatus = useCallback(async () => {
+    if (Platform.OS !== 'android') return;
+    try {
+      const enabled = await sharedGroup.isBlockerEnabled();
+      const usage = await sharedGroup.hasUsageStatsPermission();
+      const overlay = await sharedGroup.hasOverlayPermission();
+      setBlockerEnabled(enabled);
+      setHasUsageStats(usage);
+      setHasOverlay(overlay);
+    } catch (e) {
+      console.error('Check blocker status error:', e);
     }
   }, []);
 
   useFocusEffect(
     useCallback(() => {
       loadBalance();
-    }, [loadBalance]),
+      checkBlockerStatus();
+    }, [loadBalance, checkBlockerStatus]),
   );
 
   const onRefresh = async () => {
     setRefreshing(true);
     await loadBalance();
+    await checkBlockerStatus();
     setRefreshing(false);
+  };
+
+  const handleToggleBlocker = async () => {
+    if (Platform.OS !== 'android') return;
+
+    const usage = await sharedGroup.hasUsageStatsPermission();
+    const overlay = await sharedGroup.hasOverlayPermission();
+
+    if (!usage || !overlay) {
+      Alert.alert(
+        t('profile.appBlockerSetupRequired'),
+        'To enable App Blocker, you must grant both "Usage Access" and "Display Over Other Apps" permissions in Android settings.',
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          {
+            text: 'Setup',
+            onPress: async () => {
+              if (!usage) {
+                await sharedGroup.requestUsageStatsPermission();
+              } else if (!overlay) {
+                await sharedGroup.requestOverlayPermission();
+              }
+            }
+          }
+        ]
+      );
+      return;
+    }
+
+    const nextState = !blockerEnabled;
+    const success = await sharedGroup.setBlockerEnabled(nextState);
+    if (success) {
+      setBlockerEnabled(nextState);
+    }
   };
 
   const userName = user?.user_metadata?.name || t('profile.defaultUser');
@@ -108,6 +167,79 @@ export default function ProfileScreen() {
             <MaterialCommunityIcons name="chevron-right" size={20} color={colors.textSecondary} />
           </Pressable>
         </View>
+
+        {/* App Blocker Settings (Android Only) */}
+        {isAndroid && (
+          <View style={styles.settingsSection}>
+            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+              {t('profile.appBlockerSection')}
+            </Text>
+
+            {/* Enable/Disable Toggle */}
+            <Pressable
+              style={[styles.settingItem, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={handleToggleBlocker}
+            >
+              <MaterialCommunityIcons
+                name={blockerEnabled ? 'shield-check' : 'shield-outline'}
+                size={22}
+                color={blockerEnabled ? colors.success : colors.textSecondary}
+              />
+              <Text style={[styles.settingText, { color: colors.text }]}>
+                {t('profile.appBlockerToggle')}
+              </Text>
+              <MaterialCommunityIcons
+                name={blockerEnabled ? 'toggle-switch' : 'toggle-switch-off-outline'}
+                size={28}
+                color={blockerEnabled ? colors.success : colors.textSecondary}
+              />
+            </Pressable>
+
+            {/* Usage Stats Permission Status */}
+            <Pressable
+              style={[styles.settingItem, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={async () => {
+                if (!hasUsageStats) {
+                  await sharedGroup.requestUsageStatsPermission();
+                }
+              }}
+            >
+              <MaterialCommunityIcons
+                name="monitor-dashboard"
+                size={22}
+                color={hasUsageStats ? colors.success : colors.warning}
+              />
+              <Text style={[styles.settingText, { color: colors.text }]}>
+                {t('profile.appBlockerUsageStatsPermission')}
+              </Text>
+              <Text style={{ color: hasUsageStats ? colors.success : colors.warning, fontSize: 13, fontWeight: 'bold' }}>
+                {hasUsageStats ? t('profile.appBlockerGranted') : t('profile.appBlockerGrant')}
+              </Text>
+            </Pressable>
+
+            {/* Overlay Permission Status */}
+            <Pressable
+              style={[styles.settingItem, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={async () => {
+                if (!hasOverlay) {
+                  await sharedGroup.requestOverlayPermission();
+                }
+              }}
+            >
+              <MaterialCommunityIcons
+                name="card-text-outline"
+                size={22}
+                color={hasOverlay ? colors.success : colors.warning}
+              />
+              <Text style={[styles.settingText, { color: colors.text }]}>
+                {t('profile.appBlockerOverlayPermission')}
+              </Text>
+              <Text style={{ color: hasOverlay ? colors.success : colors.warning, fontSize: 13, fontWeight: 'bold' }}>
+                {hasOverlay ? t('profile.appBlockerGranted') : t('profile.appBlockerGrant')}
+              </Text>
+            </Pressable>
+          </View>
+        )}
 
         {/* App Info */}
         <Text style={[styles.version, { color: colors.textSecondary }]}>{t('profile.version')}</Text>

@@ -1,0 +1,23 @@
+package com.doparatio.app
+
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.os.Build
+
+class BootReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
+            val prefs = context.getSharedPreferences("group.com.doparatio.app", Context.MODE_PRIVATE)
+            val isEnabled = prefs.getBoolean("app_blocker_enabled", false)
+            if (isEnabled) {
+                val serviceIntent = Intent(context, AppBlockerService::class.java)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(serviceIntent)
+                } else {
+                    context.startService(serviceIntent)
+                }
+            }
+        }
+    }
+}

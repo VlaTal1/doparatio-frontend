@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lock_title">Time is up!</string>
+    <string name="lock_subtitle">You have used up your time balance. To continue using apps, open Doparatio and complete some habits or tasks!</string>
+    <string name="lock_btn_open">Open Doparatio</string>
+    <string name="lock_btn_home">Go Home</string>
+</resources>

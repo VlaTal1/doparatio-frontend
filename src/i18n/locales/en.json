@@ -87,6 +87,13 @@
     "darkTheme": "Dark Mode",
     "lightTheme": "Light Mode",
     "signOut": "Sign Out",
+    "appBlockerSection": "App Blocker (Android)",
+    "appBlockerToggle": "Enable App Blocker",
+    "appBlockerUsageStatsPermission": "Usage Access",
+    "appBlockerOverlayPermission": "Display Over Other Apps",
+    "appBlockerGrant": "Grant",
+    "appBlockerGranted": "Granted",
+    "appBlockerSetupRequired": "Permissions Required",
     "version": "DopaRatio v1.0.0",
     "defaultUser": "User"
   },

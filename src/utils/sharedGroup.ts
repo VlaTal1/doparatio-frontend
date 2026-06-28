@@ -76,6 +76,75 @@ export const sharedGroup = {
     } catch (e) {
       return '';
     }
+  },
+
+  setTimeBalance: async (balance: number) => {
+    if (!isSupported) return;
+    try {
+      await SharedGroup.setString('time_balance', balance.toString(), SUITE_NAME);
+    } catch (e) {
+      console.error('Failed to set time balance in shared group:', e);
+    }
+  },
+
+  isBlockerEnabled: async (): Promise<boolean> => {
+    if (!isSupported || Platform.OS !== 'android') return false;
+    try {
+      return await SharedGroup.isBlockerEnabled();
+    } catch (e) {
+      console.error('Failed to check if blocker is enabled:', e);
+      return false;
+    }
+  },
+
+  setBlockerEnabled: async (enabled: boolean): Promise<boolean> => {
+    if (!isSupported || Platform.OS !== 'android') return false;
+    try {
+      return await SharedGroup.setBlockerEnabled(enabled);
+    } catch (e) {
+      console.error('Failed to set blocker enabled:', e);
+      return false;
+    }
+  },
+
+  hasUsageStatsPermission: async (): Promise<boolean> => {
+    if (!isSupported || Platform.OS !== 'android') return false;
+    try {
+      return await SharedGroup.hasUsageStatsPermission();
+    } catch (e) {
+      console.error('Failed to check usage stats permission:', e);
+      return false;
+    }
+  },
+
+  requestUsageStatsPermission: async (): Promise<boolean> => {
+    if (!isSupported || Platform.OS !== 'android') return false;
+    try {
+      return await SharedGroup.requestUsageStatsPermission();
+    } catch (e) {
+      console.error('Failed to request usage stats permission:', e);
+      return false;
+    }
+  },
+
+  hasOverlayPermission: async (): Promise<boolean> => {
+    if (!isSupported || Platform.OS !== 'android') return false;
+    try {
+      return await SharedGroup.hasOverlayPermission();
+    } catch (e) {
+      console.error('Failed to check overlay permission:', e);
+      return false;
+    }
+  },
+
+  requestOverlayPermission: async (): Promise<boolean> => {
+    if (!isSupported || Platform.OS !== 'android') return false;
+    try {
+      return await SharedGroup.requestOverlayPermission();
+    } catch (e) {
+      console.error('Failed to request overlay permission:', e);
+      return false;
+    }
   }
 };
 

@@ -45,6 +45,7 @@ export default function TodayScreen() {
         tasksApi.getForDate(today),
       ]);
       setBalance(balanceData.balance);
+      await sharedGroup.setTimeBalance(balanceData.balance);
       setHabits(habitsData.filter((h) => h.active));
       setTasks(tasksData.filter((t) => t.active));
       await sharedGroup.setHabitsCache(habitsData.filter((h) => h.active));

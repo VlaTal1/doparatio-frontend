@@ -33,7 +33,9 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "./plugins/withHabitWidget"
+      "./plugins/withSharedGroup",
+      "./plugins/withHabitWidget",
+      "./plugins/withAppBlocker"
     ]
   }
 }

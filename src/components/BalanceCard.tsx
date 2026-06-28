@@ -49,8 +49,9 @@ export function BalanceCard({ balance }: BalanceCardProps) {
     shadowOpacity: glow.value,
   }));
 
-  const hours = Math.floor(balance / 60);
-  const minutes = balance % 60;
+  const totalMinutes = Math.floor(balance / 60);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
 
   return (
     <Animated.View
@@ -74,7 +75,7 @@ export function BalanceCard({ balance }: BalanceCardProps) {
         </Text>
       </Animated.View>
       <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-        {i18n.t('balance.minutesAvailable', { count: balance })}
+        {i18n.t('balance.minutesAvailable', { count: totalMinutes })}
       </Text>
     </Animated.View>
   );

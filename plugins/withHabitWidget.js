@@ -1,4 +1,4 @@
-const { withXcodeProject, withAndroidManifest, withMainApplication } = require('@expo/config-plugins');
+const { withXcodeProject, withAndroidManifest } = require('@expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
 
@@ -6,9 +6,7 @@ function generateUUID() {
   return Array.from({ length: 24 }, () => Math.floor(Math.random() * 16).toString(16).toUpperCase()).join('');
 }
 
-// -------------------------------------------------------------------------
-// iOS WIDGET CONFIGURATION
-// -------------------------------------------------------------------------
+// iOS Habit Widget target configurations
 function withIosHabitWidget(config) {
   return withXcodeProject(config, async (config) => {
     const proj = config.modResults;
@@ -16,35 +14,9 @@ function withIosHabitWidget(config) {
     const projectName = config.modRequest.projectName || config.name;
 
     const templateDir = path.join(projectRoot, 'ios-widget-templates');
-    const iosAppDir = path.join(platformProjectRoot, projectName);
     const iosWidgetDir = path.join(platformProjectRoot, 'HabitWidget');
 
-    // 1. Ensure target directories exist and copy files
-    fs.mkdirSync(iosAppDir, { recursive: true });
     fs.mkdirSync(iosWidgetDir, { recursive: true });
-
-    // Copy bridge files to main app folder
-    fs.copyFileSync(
-      path.join(templateDir, 'SharedGroup.swift'),
-      path.join(iosAppDir, 'SharedGroup.swift')
-    );
-    fs.copyFileSync(
-      path.join(templateDir, 'SharedGroup.m'),
-      path.join(iosAppDir, 'SharedGroup.m')
-    );
-
-    // Configure Bridging Header to expose React headers to Swift
-    const bridgingHeaderPath = path.join(iosAppDir, `${projectName}-Bridging-Header.h`);
-    if (fs.existsSync(bridgingHeaderPath)) {
-      let content = fs.readFileSync(bridgingHeaderPath, 'utf8');
-      if (!content.includes('RCTBridgeModule.h')) {
-        content += '\n#import <React/RCTBridgeModule.h>\n';
-        fs.writeFileSync(bridgingHeaderPath, content);
-        console.log('React headers imported in Bridging Header.');
-      }
-    } else {
-      console.warn(`Bridging header not found at: ${bridgingHeaderPath}`);
-    }
 
     // Copy widget files to widget target folder
     fs.copyFileSync(
@@ -66,29 +38,8 @@ function withIosHabitWidget(config) {
 
     console.log('Widget template files copied successfully.');
 
-    // 2. Xcode Project Target configurations
+    // Xcode Project Target configurations
     const mainTargetUuid = proj.getFirstProject().firstProject.targets[0].value;
-    const mainGroupKey = proj.findPBXGroupKey({ name: projectName });
-    if (!mainGroupKey) {
-      throw new Error(`Main ${projectName} group not found in Xcode project.`);
-    }
-
-    // Link SharedGroup files to main target if not already linked
-    const hasSharedGroupSwift = Object.values(proj.pbxFileReferenceSection()).some(
-      f => f.path === `"${projectName}/SharedGroup.swift"` || f.path === `${projectName}/SharedGroup.swift`
-    );
-    if (!hasSharedGroupSwift) {
-      proj.addSourceFile(`${projectName}/SharedGroup.swift`, { target: mainTargetUuid }, mainGroupKey);
-    }
-
-    const hasSharedGroupM = Object.values(proj.pbxFileReferenceSection()).some(
-      f => f.path === `"${projectName}/SharedGroup.m"` || f.path === `${projectName}/SharedGroup.m`
-    );
-    if (!hasSharedGroupM) {
-      proj.addSourceFile(`${projectName}/SharedGroup.m`, { target: mainTargetUuid }, mainGroupKey);
-    }
-
-    console.log('SharedGroup files linked to main target.');
 
     // Create Widget Target if not exists
     const widgetTargetName = 'HabitWidget';
@@ -102,7 +53,7 @@ function withIosHabitWidget(config) {
       const widgetTarget = proj.addTarget(widgetTargetName, 'app_extension', widgetTargetName);
       const widgetTargetUuid = widgetTarget.uuid;
 
-      // Create build phases for the widget target first
+      // Create build phases for the widget target
       proj.addBuildPhase([], 'PBXSourcesBuildPhase', 'Sources', widgetTargetUuid);
       proj.addBuildPhase([], 'PBXFrameworksBuildPhase', 'Frameworks', widgetTargetUuid);
 
@@ -115,7 +66,7 @@ function withIosHabitWidget(config) {
       proj.addSourceFile('HabitWidgetIntents.swift', { target: widgetTargetUuid }, widgetGroup.uuid);
       proj.addFile('HabitWidget.entitlements', widgetGroup.uuid);
 
-      // Configure build configurations (bundle ID, Plist, Entitlements, deployment target, Swift version)
+      // Configure build configurations
       const buildConfigs = proj.pbxXCConfigurationList()[widgetTarget.pbxNativeTarget.buildConfigurationList];
       const buildConfigurations = buildConfigs.buildConfigurations;
 
@@ -148,7 +99,6 @@ function withIosHabitWidget(config) {
     } else {
       console.log(`Target "${widgetTargetName}" already exists, skipping addition.`);
       
-      // Ensure HabitWidgetIntents.swift is added to the widget target and group if not already there
       const widgetGroupKey = proj.findPBXGroupKey({ name: widgetTargetName });
       const targetObj = targets.find(
         t => proj.pbxNativeTargetSection()[t.value]?.name === `"${widgetTargetName}"`
@@ -169,17 +119,14 @@ function withIosHabitWidget(config) {
   });
 }
 
-// -------------------------------------------------------------------------
-// Android WIDGET CONFIGURATION
-// -------------------------------------------------------------------------
+// Android Habit Widget file configurations
 const withAndroidWidgetFiles = (config) => {
   return withAndroidManifest(config, async (config) => {
     const { projectRoot } = config.modRequest;
-    const templateDir = path.join(projectRoot, 'android-widget-templates');
+    const templateDir = path.join(projectRoot, 'android-templates', 'widget');
     const androidAppDir = path.join(projectRoot, 'android', 'app');
     
     if (!fs.existsSync(androidAppDir)) {
-      console.warn('Android directory does not exist, skipping widget copy.');
       return config;
     }
     
@@ -200,15 +147,8 @@ const withAndroidWidgetFiles = (config) => {
     fs.mkdirSync(valuesDir, { recursive: true });
     fs.mkdirSync(valuesNightDir, { recursive: true });
     
-    const kotlinFiles = [
-      'SharedGroupModule.kt',
-      'SharedGroupPackage.kt',
-      'HabitWidgetProvider.kt',
-      'HabitWidgetConfigureActivity.kt'
-    ];
-    for (const file of kotlinFiles) {
-      fs.copyFileSync(path.join(templateDir, file), path.join(javaDir, file));
-    }
+    fs.copyFileSync(path.join(templateDir, 'HabitWidgetProvider.kt'), path.join(javaDir, 'HabitWidgetProvider.kt'));
+    fs.copyFileSync(path.join(templateDir, 'HabitWidgetConfigureActivity.kt'), path.join(javaDir, 'HabitWidgetConfigureActivity.kt'));
     
     fs.copyFileSync(path.join(templateDir, 'habit_widget_info.xml'), path.join(xmlDir, 'habit_widget_info.xml'));
     fs.copyFileSync(path.join(templateDir, 'habit_widget_layout.xml'), path.join(layoutDir, 'habit_widget_layout.xml'));
@@ -262,7 +202,7 @@ const withAndroidWidgetManifest = (config) => {
         ]
       });
     }
-    
+
     if (!mainApplication.activity) {
       mainApplication.activity = [];
     }
@@ -293,40 +233,9 @@ const withAndroidWidgetManifest = (config) => {
   });
 };
 
-const withAndroidWidgetMainApplication = (config) => {
-  return withMainApplication(config, (config) => {
-    let contents = config.modResults.contents;
-    
-    if (!contents.includes('SharedGroupPackage()')) {
-      const packageListHook = 'PackageList(this).packages.apply {';
-      if (contents.includes(packageListHook)) {
-        contents = contents.replace(
-          packageListHook,
-          `${packageListHook}\n          add(SharedGroupPackage())`
-        );
-        console.log('SharedGroupPackage added to MainApplication.kt');
-      } else {
-        console.warn('Could not find PackageList hook in MainApplication.kt');
-      }
-    }
-    
-    config.modResults.contents = contents;
-    return config;
-  });
-};
-
-function withAndroidHabitWidget(config) {
-  config = withAndroidWidgetFiles(config);
-  config = withAndroidWidgetManifest(config);
-  config = withAndroidWidgetMainApplication(config);
-  return config;
-}
-
-// -------------------------------------------------------------------------
-// MAIN EXPORT
-// -------------------------------------------------------------------------
 module.exports = function withHabitWidget(config) {
   config = withIosHabitWidget(config);
-  config = withAndroidHabitWidget(config);
+  config = withAndroidWidgetFiles(config);
+  config = withAndroidWidgetManifest(config);
   return config;
 };
