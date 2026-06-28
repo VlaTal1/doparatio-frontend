@@ -4,9 +4,11 @@ import { API_URL } from '../constants/config';
 const { SharedGroup } = NativeModules;
 const SUITE_NAME = 'group.com.doparatio.app';
 
+const isSupported = (Platform.OS === 'ios' || Platform.OS === 'android') && !!SharedGroup;
+
 export const sharedGroup = {
   setAuthToken: async (token: string) => {
-    if (Platform.OS !== 'ios' || !SharedGroup) return;
+    if (!isSupported) return;
     try {
       await SharedGroup.setString('auth_token', token, SUITE_NAME);
       await SharedGroup.reloadAllTimelines();
@@ -16,7 +18,7 @@ export const sharedGroup = {
   },
 
   setApiUrl: async (url: string) => {
-    if (Platform.OS !== 'ios' || !SharedGroup) return;
+    if (!isSupported) return;
     try {
       await SharedGroup.setString('api_url', url, SUITE_NAME);
     } catch (e) {
@@ -25,7 +27,7 @@ export const sharedGroup = {
   },
 
   setWidgetHabitId: async (habitId: string) => {
-    if (Platform.OS !== 'ios' || !SharedGroup) return;
+    if (!isSupported) return;
     try {
       await SharedGroup.setString('widget_habit_id', habitId, SUITE_NAME);
     } catch (e) {
@@ -34,7 +36,7 @@ export const sharedGroup = {
   },
 
   getWidgetHabitId: async (): Promise<string> => {
-    if (Platform.OS !== 'ios' || !SharedGroup) return '';
+    if (!isSupported) return '';
     try {
       return await SharedGroup.getString('widget_habit_id', SUITE_NAME);
     } catch (e) {
@@ -44,7 +46,7 @@ export const sharedGroup = {
   },
 
   reloadWidget: async () => {
-    if (Platform.OS !== 'ios' || !SharedGroup) return;
+    if (!isSupported) return;
     try {
       await SharedGroup.reloadAllTimelines();
     } catch (e) {
@@ -53,7 +55,7 @@ export const sharedGroup = {
   },
 
   setHabitsCache: async (habits: any[]) => {
-    if (Platform.OS !== 'ios' || !SharedGroup) return;
+    if (!isSupported) return;
     try {
       const cached = habits.map(h => ({
         id: h.id,
@@ -68,7 +70,7 @@ export const sharedGroup = {
   },
 
   getDebugKey: async (key: string): Promise<string> => {
-    if (Platform.OS !== 'ios' || !SharedGroup) return '';
+    if (!isSupported) return '';
     try {
       return await SharedGroup.getString(key, SUITE_NAME);
     } catch (e) {
@@ -76,6 +78,7 @@ export const sharedGroup = {
     }
   }
 };
+
 
 
 

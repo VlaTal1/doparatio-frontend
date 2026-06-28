@@ -1,4 +1,4 @@
-const { withXcodeProject } = require('@expo/config-plugins');
+const { withXcodeProject, withAndroidManifest, withMainApplication } = require('@expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
 
@@ -6,7 +6,10 @@ function generateUUID() {
   return Array.from({ length: 24 }, () => Math.floor(Math.random() * 16).toString(16).toUpperCase()).join('');
 }
 
-module.exports = function withHabitWidget(config) {
+// -------------------------------------------------------------------------
+// iOS WIDGET CONFIGURATION
+// -------------------------------------------------------------------------
+function withIosHabitWidget(config) {
   return withXcodeProject(config, async (config) => {
     const proj = config.modResults;
     const { projectRoot, platformProjectRoot } = config.modRequest;
@@ -164,4 +167,166 @@ module.exports = function withHabitWidget(config) {
 
     return config;
   });
+}
+
+// -------------------------------------------------------------------------
+// Android WIDGET CONFIGURATION
+// -------------------------------------------------------------------------
+const withAndroidWidgetFiles = (config) => {
+  return withAndroidManifest(config, async (config) => {
+    const { projectRoot } = config.modRequest;
+    const templateDir = path.join(projectRoot, 'android-widget-templates');
+    const androidAppDir = path.join(projectRoot, 'android', 'app');
+    
+    if (!fs.existsSync(androidAppDir)) {
+      console.warn('Android directory does not exist, skipping widget copy.');
+      return config;
+    }
+    
+    const javaDir = path.join(androidAppDir, 'src', 'main', 'java', 'com', 'doparatio', 'app');
+    const resDir = path.join(androidAppDir, 'src', 'main', 'res');
+    const layoutDir = path.join(resDir, 'layout');
+    const xmlDir = path.join(resDir, 'xml');
+    const drawableDir = path.join(resDir, 'drawable');
+    const drawableNightDir = path.join(resDir, 'drawable-night');
+    const valuesDir = path.join(resDir, 'values');
+    const valuesNightDir = path.join(resDir, 'values-night');
+    
+    fs.mkdirSync(javaDir, { recursive: true });
+    fs.mkdirSync(layoutDir, { recursive: true });
+    fs.mkdirSync(xmlDir, { recursive: true });
+    fs.mkdirSync(drawableDir, { recursive: true });
+    fs.mkdirSync(drawableNightDir, { recursive: true });
+    fs.mkdirSync(valuesDir, { recursive: true });
+    fs.mkdirSync(valuesNightDir, { recursive: true });
+    
+    const kotlinFiles = [
+      'SharedGroupModule.kt',
+      'SharedGroupPackage.kt',
+      'HabitWidgetProvider.kt',
+      'HabitWidgetConfigureActivity.kt'
+    ];
+    for (const file of kotlinFiles) {
+      fs.copyFileSync(path.join(templateDir, file), path.join(javaDir, file));
+    }
+    
+    fs.copyFileSync(path.join(templateDir, 'habit_widget_info.xml'), path.join(xmlDir, 'habit_widget_info.xml'));
+    fs.copyFileSync(path.join(templateDir, 'habit_widget_layout.xml'), path.join(layoutDir, 'habit_widget_layout.xml'));
+    fs.copyFileSync(path.join(templateDir, 'habit_widget_configure.xml'), path.join(layoutDir, 'habit_widget_configure.xml'));
+    fs.copyFileSync(path.join(templateDir, 'habit_widget_configure_item.xml'), path.join(layoutDir, 'habit_widget_configure_item.xml'));
+    fs.copyFileSync(path.join(templateDir, 'habit_widget_background.xml'), path.join(drawableDir, 'habit_widget_background.xml'));
+    fs.copyFileSync(path.join(templateDir, 'habit_widget_background_night.xml'), path.join(drawableNightDir, 'habit_widget_background.xml'));
+    fs.copyFileSync(path.join(templateDir, 'colors-widget.xml'), path.join(valuesDir, 'colors-widget.xml'));
+    fs.copyFileSync(path.join(templateDir, 'colors-widget-night.xml'), path.join(valuesNightDir, 'colors-widget.xml'));
+    
+    console.log('Android widget files copied successfully.');
+    return config;
+  });
+};
+
+const withAndroidWidgetManifest = (config) => {
+  return withAndroidManifest(config, (config) => {
+    const androidManifest = config.modResults;
+    const mainApplication = androidManifest.manifest.application[0];
+    
+    if (!mainApplication.receiver) {
+      mainApplication.receiver = [];
+    }
+    const hasReceiver = mainApplication.receiver.some(
+      r => r.$['android:name'] === 'com.doparatio.app.HabitWidgetProvider'
+    );
+    if (!hasReceiver) {
+      mainApplication.receiver.push({
+        $: {
+          'android:name': 'com.doparatio.app.HabitWidgetProvider',
+          'android:exported': 'false'
+        },
+        'intent-filter': [
+          {
+            action: [
+              {
+                $: {
+                  'android:name': 'android.appwidget.action.APPWIDGET_UPDATE'
+                }
+              }
+            ]
+          }
+        ],
+        'meta-data': [
+          {
+            $: {
+              'android:name': 'android.appwidget.provider',
+              'android:resource': '@xml/habit_widget_info'
+            }
+          }
+        ]
+      });
+    }
+    
+    if (!mainApplication.activity) {
+      mainApplication.activity = [];
+    }
+    const hasActivity = mainApplication.activity.some(
+      a => a.$['android:name'] === 'com.doparatio.app.HabitWidgetConfigureActivity'
+    );
+    if (!hasActivity) {
+      mainApplication.activity.push({
+        $: {
+          'android:name': 'com.doparatio.app.HabitWidgetConfigureActivity',
+          'android:exported': 'true'
+        },
+        'intent-filter': [
+          {
+            action: [
+              {
+                $: {
+                  'android:name': 'android.intent.action.APPWIDGET_CONFIGURE'
+                }
+              }
+            ]
+          }
+        ]
+      });
+    }
+    
+    return config;
+  });
+};
+
+const withAndroidWidgetMainApplication = (config) => {
+  return withMainApplication(config, (config) => {
+    let contents = config.modResults.contents;
+    
+    if (!contents.includes('SharedGroupPackage()')) {
+      const packageListHook = 'PackageList(this).packages.apply {';
+      if (contents.includes(packageListHook)) {
+        contents = contents.replace(
+          packageListHook,
+          `${packageListHook}\n          add(SharedGroupPackage())`
+        );
+        console.log('SharedGroupPackage added to MainApplication.kt');
+      } else {
+        console.warn('Could not find PackageList hook in MainApplication.kt');
+      }
+    }
+    
+    config.modResults.contents = contents;
+    return config;
+  });
+};
+
+function withAndroidHabitWidget(config) {
+  config = withAndroidWidgetFiles(config);
+  config = withAndroidWidgetManifest(config);
+  config = withAndroidWidgetMainApplication(config);
+  return config;
+}
+
+// -------------------------------------------------------------------------
+// MAIN EXPORT
+// -------------------------------------------------------------------------
+module.exports = function withHabitWidget(config) {
+  config = withIosHabitWidget(config);
+  config = withAndroidHabitWidget(config);
+  return config;
 };
