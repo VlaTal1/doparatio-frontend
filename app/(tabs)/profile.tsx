@@ -25,8 +25,8 @@ export default function ProfileScreen() {
   const { t } = useTranslation();
   const [balance, setBalance] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
-  
-  const [isAndroid] = useState(Platform.OS === 'android');
+
+  const isSupportedPlatform = Platform.OS === 'android' || Platform.OS === 'ios';
   const [blockerEnabled, setBlockerEnabled] = useState(false);
   const [hasUsageStats, setHasUsageStats] = useState(false);
   const [hasOverlay, setHasOverlay] = useState(false);
@@ -42,7 +42,7 @@ export default function ProfileScreen() {
   }, []);
 
   const checkBlockerStatus = useCallback(async () => {
-    if (Platform.OS !== 'android') return;
+    if (Platform.OS !== 'android' && Platform.OS !== 'ios') return;
     try {
       const enabled = await sharedGroup.isBlockerEnabled();
       const usage = await sharedGroup.hasUsageStatsPermission();
@@ -70,29 +70,49 @@ export default function ProfileScreen() {
   };
 
   const handleToggleBlocker = async () => {
-    if (Platform.OS !== 'android') return;
+    if (Platform.OS !== 'android' && Platform.OS !== 'ios') return;
 
     const usage = await sharedGroup.hasUsageStatsPermission();
     const overlay = await sharedGroup.hasOverlayPermission();
 
     if (!usage || !overlay) {
-      Alert.alert(
-        t('profile.appBlockerSetupRequired'),
-        'To enable App Blocker, you must grant both "Usage Access" and "Display Over Other Apps" permissions in Android settings.',
-        [
-          { text: t('common.cancel'), style: 'cancel' },
-          {
-            text: 'Setup',
-            onPress: async () => {
-              if (!usage) {
-                await sharedGroup.requestUsageStatsPermission();
-              } else if (!overlay) {
-                await sharedGroup.requestOverlayPermission();
+      if (Platform.OS === 'android') {
+        Alert.alert(
+          t('profile.appBlockerSetupRequired'),
+          'To enable App Blocker, you must grant both "Usage Access" and "Display Over Other Apps" permissions in Android settings.',
+          [
+            { text: t('common.cancel'), style: 'cancel' },
+            {
+              text: 'Setup',
+              onPress: async () => {
+                if (!usage) {
+                  await sharedGroup.requestUsageStatsPermission();
+                } else if (!overlay) {
+                  await sharedGroup.requestOverlayPermission();
+                }
               }
             }
-          }
-        ]
-      );
+          ]
+        );
+      } else {
+        Alert.alert(
+          t('profile.appBlockerSetupRequired'),
+          'To enable App Blocker on iOS, you must grant Screen Time permission and select at least one application to block.',
+          [
+            { text: t('common.cancel'), style: 'cancel' },
+            {
+              text: 'Setup',
+              onPress: async () => {
+                if (!usage) {
+                  await sharedGroup.requestUsageStatsPermission();
+                } else if (!overlay) {
+                  await sharedGroup.requestOverlayPermission();
+                }
+              }
+            }
+          ]
+        );
+      }
       return;
     }
 
@@ -168,11 +188,11 @@ export default function ProfileScreen() {
           </Pressable>
         </View>
 
-        {/* App Blocker Settings (Android Only) */}
-        {isAndroid && (
+        {/* App Blocker Settings */}
+        {isSupportedPlatform && (
           <View style={styles.settingsSection}>
             <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
-              {t('profile.appBlockerSection')}
+              {Platform.OS === 'ios' ? 'App Blocker (iOS)' : t('profile.appBlockerSection')}
             </Text>
 
             {/* Enable/Disable Toggle */}
@@ -195,7 +215,7 @@ export default function ProfileScreen() {
               />
             </Pressable>
 
-            {/* Usage Stats Permission Status */}
+            {/* Usage Stats / Screen Time Permission Status */}
             <Pressable
               style={[styles.settingItem, { backgroundColor: colors.card, borderColor: colors.border }]}
               onPress={async () => {
@@ -205,34 +225,36 @@ export default function ProfileScreen() {
               }}
             >
               <MaterialCommunityIcons
-                name="monitor-dashboard"
+                name={Platform.OS === 'ios' ? 'clock-outline' : 'monitor-dashboard'}
                 size={22}
                 color={hasUsageStats ? colors.success : colors.warning}
               />
               <Text style={[styles.settingText, { color: colors.text }]}>
-                {t('profile.appBlockerUsageStatsPermission')}
+                {Platform.OS === 'ios' ? 'Screen Time Access' : t('profile.appBlockerUsageStatsPermission')}
               </Text>
               <Text style={{ color: hasUsageStats ? colors.success : colors.warning, fontSize: 13, fontWeight: 'bold' }}>
                 {hasUsageStats ? t('profile.appBlockerGranted') : t('profile.appBlockerGrant')}
               </Text>
             </Pressable>
 
-            {/* Overlay Permission Status */}
+            {/* Overlay / Select Apps Permission Status */}
             <Pressable
               style={[styles.settingItem, { backgroundColor: colors.card, borderColor: colors.border }]}
               onPress={async () => {
-                if (!hasOverlay) {
-                  await sharedGroup.requestOverlayPermission();
-                }
+                // On iOS, we let them pick apps even if they already did (to change selection)
+                await sharedGroup.requestOverlayPermission();
+                // Reload status
+                const overlay = await sharedGroup.hasOverlayPermission();
+                setHasOverlay(overlay);
               }}
             >
               <MaterialCommunityIcons
-                name="card-text-outline"
+                name={Platform.OS === 'ios' ? 'apps' : 'card-text-outline'}
                 size={22}
                 color={hasOverlay ? colors.success : colors.warning}
               />
               <Text style={[styles.settingText, { color: colors.text }]}>
-                {t('profile.appBlockerOverlayPermission')}
+                {Platform.OS === 'ios' ? 'Select Blocked Apps' : t('profile.appBlockerOverlayPermission')}
               </Text>
               <Text style={{ color: hasOverlay ? colors.success : colors.warning, fontSize: 13, fontWeight: 'bold' }}>
                 {hasOverlay ? t('profile.appBlockerGranted') : t('profile.appBlockerGrant')}

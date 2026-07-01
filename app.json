@@ -14,7 +14,8 @@
       "entitlements": {
         "com.apple.security.application-groups": [
           "group.com.doparatio.app"
-        ]
+        ],
+        "com.apple.developer.family-controls": true
       }
     },
     "android": {

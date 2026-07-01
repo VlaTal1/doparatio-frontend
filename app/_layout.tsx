@@ -12,6 +12,8 @@ function RootLayoutNav() {
   const segments = useSegments();
   const router = useRouter();
 
+
+
   useEffect(() => {
     if (loading) return;
 

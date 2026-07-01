@@ -1,4 +1,4 @@
-const { withAndroidManifest } = require('@expo/config-plugins');
+const { withXcodeProject, withAndroidManifest } = require('@expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
 
@@ -140,8 +140,108 @@ const withAndroidBlockerManifest = (config) => {
   });
 };
 
+const withIosAppBlocker = (config) => {
+  return withXcodeProject(config, async (config) => {
+    const proj = config.modResults;
+    const { projectRoot, platformProjectRoot } = config.modRequest;
+    
+    const templateDir = path.join(projectRoot, 'ios-blocker-templates');
+    if (!fs.existsSync(templateDir)) {
+      return config;
+    }
+
+    const targets = [
+      {
+        name: 'DeviceActivityMonitor',
+        sourceFile: 'DeviceActivityMonitor.swift',
+        infoPlist: 'DeviceActivityMonitor-Info.plist',
+      },
+      {
+        name: 'ShieldConfiguration',
+        sourceFile: 'ShieldConfiguration.swift',
+        infoPlist: 'ShieldConfiguration-Info.plist',
+      },
+      {
+        name: 'ShieldAction',
+        sourceFile: 'ShieldAction.swift',
+        infoPlist: 'ShieldAction-Info.plist',
+      }
+    ];
+
+    const mainTargetUuid = proj.getFirstProject().firstProject.targets[0].value;
+
+    targets.forEach(targetSpec => {
+      const targetName = targetSpec.name;
+      const targetDir = path.join(platformProjectRoot, targetName);
+      
+      fs.mkdirSync(targetDir, { recursive: true });
+
+      // Copy template files to target directory
+      fs.copyFileSync(path.join(templateDir, targetSpec.sourceFile), path.join(targetDir, targetSpec.sourceFile));
+      fs.copyFileSync(path.join(templateDir, targetSpec.infoPlist), path.join(targetDir, 'Info.plist'));
+      fs.copyFileSync(path.join(templateDir, 'Extensions.entitlements'), path.join(targetDir, `${targetName}.entitlements`));
+
+      const targetExists = proj.getFirstProject().firstProject.targets.some(
+        t => proj.pbxNativeTargetSection()[t.value]?.name === `"${targetName}"`
+      );
+
+      if (!targetExists) {
+        console.log(`Creating iOS target "${targetName}"...`);
+        const nativeTarget = proj.addTarget(targetName, 'app_extension', targetName);
+        const targetUuid = nativeTarget.uuid;
+
+        // Create build phases
+        proj.addBuildPhase([], 'PBXSourcesBuildPhase', 'Sources', targetUuid);
+        proj.addBuildPhase([], 'PBXFrameworksBuildPhase', 'Frameworks', targetUuid);
+
+        // Create PBX group
+        const targetGroup = proj.addPbxGroup([], targetName, targetName);
+        proj.addToPbxGroup(targetGroup.uuid, proj.getFirstProject().firstProject.mainGroup);
+
+        // Add source and entitlements files
+        proj.addSourceFile(targetSpec.sourceFile, { target: targetUuid }, targetGroup.uuid);
+        proj.addFile(`${targetName}.entitlements`, targetGroup.uuid);
+
+        // Configure configurations
+        const buildConfigs = proj.pbxXCConfigurationList()[nativeTarget.pbxNativeTarget.buildConfigurationList];
+        const buildConfigurations = buildConfigs.buildConfigurations;
+
+        buildConfigurations.forEach(configObj => {
+          const key = configObj.value;
+          if (key && key.length === 24) {
+            const cfg = proj.pbxXCBuildConfigurationSection()[key];
+            if (cfg && cfg.buildSettings) {
+              cfg.buildSettings.PRODUCT_BUNDLE_IDENTIFIER = `\"com.doparatio.app.${targetName}\"`;
+              cfg.buildSettings.INFOPLIST_FILE = `\"${targetName}/Info.plist\"`;
+              cfg.buildSettings.CODE_SIGN_ENTITLEMENTS = `\"${targetName}/${targetName}.entitlements\"`;
+              cfg.buildSettings.LD_RUNPATH_SEARCH_PATHS = '"$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks"';
+              cfg.buildSettings.SWIFT_VERSION = '5.0';
+              cfg.buildSettings.IPHONEOS_DEPLOYMENT_TARGET = '17.0';
+              cfg.buildSettings.PRODUCT_NAME = `\"${targetName}\"`;
+              cfg.buildSettings.MARKETING_VERSION = '"1.0.0"';
+              cfg.buildSettings.CURRENT_PROJECT_VERSION = '"1"';
+              cfg.buildSettings.GENERATE_INFOPLIST_FILE = 'YES';
+              cfg.buildSettings.SWIFT_EMIT_LOC_STRINGS = 'YES';
+              cfg.buildSettings.SKIP_INSTALL = 'YES';
+            }
+          }
+        });
+
+        // Add dependency
+        proj.addTargetDependency(mainTargetUuid, [targetUuid]);
+        console.log(`Configured target dependency: Main target depends on "${targetName}".`);
+      } else {
+        console.log(`iOS target "${targetName}" already exists, skipping.`);
+      }
+    });
+
+    return config;
+  });
+};
+
 module.exports = function withAppBlocker(config) {
   config = withAndroidBlockerFiles(config);
   config = withAndroidBlockerManifest(config);
+  config = withIosAppBlocker(config);
   return config;
 };

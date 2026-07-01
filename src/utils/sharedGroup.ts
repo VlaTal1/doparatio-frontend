@@ -88,7 +88,7 @@ export const sharedGroup = {
   },
 
   isBlockerEnabled: async (): Promise<boolean> => {
-    if (!isSupported || Platform.OS !== 'android') return false;
+    if (!isSupported) return false;
     try {
       return await SharedGroup.isBlockerEnabled();
     } catch (e) {
@@ -98,7 +98,7 @@ export const sharedGroup = {
   },
 
   setBlockerEnabled: async (enabled: boolean): Promise<boolean> => {
-    if (!isSupported || Platform.OS !== 'android') return false;
+    if (!isSupported) return false;
     try {
       return await SharedGroup.setBlockerEnabled(enabled);
     } catch (e) {
@@ -108,7 +108,7 @@ export const sharedGroup = {
   },
 
   hasUsageStatsPermission: async (): Promise<boolean> => {
-    if (!isSupported || Platform.OS !== 'android') return false;
+    if (!isSupported) return false;
     try {
       return await SharedGroup.hasUsageStatsPermission();
     } catch (e) {
@@ -118,7 +118,7 @@ export const sharedGroup = {
   },
 
   requestUsageStatsPermission: async (): Promise<boolean> => {
-    if (!isSupported || Platform.OS !== 'android') return false;
+    if (!isSupported) return false;
     try {
       return await SharedGroup.requestUsageStatsPermission();
     } catch (e) {
@@ -128,7 +128,7 @@ export const sharedGroup = {
   },
 
   hasOverlayPermission: async (): Promise<boolean> => {
-    if (!isSupported || Platform.OS !== 'android') return false;
+    if (!isSupported) return false;
     try {
       return await SharedGroup.hasOverlayPermission();
     } catch (e) {
@@ -138,7 +138,7 @@ export const sharedGroup = {
   },
 
   requestOverlayPermission: async (): Promise<boolean> => {
-    if (!isSupported || Platform.OS !== 'android') return false;
+    if (!isSupported) return false;
     try {
       return await SharedGroup.requestOverlayPermission();
     } catch (e) {
